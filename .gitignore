@@ -1,1 +1,10 @@
 /out
+.idea
+node_modules
+.env
+
+build/
+bin/
+artifacts
+.secret
+package-lock.json
