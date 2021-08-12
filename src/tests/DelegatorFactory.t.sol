@@ -33,6 +33,7 @@ contract DelegatorFactoryTest is DSTest {
    }
 
    function test_createDelegator(address delegatee) public {
+      if (delegatee == address(0)) return;
       delegatorFactory.createDelegator(delegatee);
       address delegator = delegatorFactory.delegateeToDelegator(delegatee);
       Delegator d = Delegator(delegator);
@@ -46,6 +47,7 @@ contract DelegatorFactoryTest is DSTest {
    }
 
    function testFail_createDelegator(address delegatee) public {
+      if (delegatee == address(0)) return;
       delegatorFactory.createDelegator(delegatee);
       delegatorFactory.createDelegator(delegatee);
    }
