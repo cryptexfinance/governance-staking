@@ -8,7 +8,7 @@
 	"private": false,
 	"scripts": {
 		"build": "npm run typechain",
-		"test": "npx hardhat test ",
+		"test": "./test.sh",
 		"compile": "npx hardhat compile",
 		"coverage": "npx hardhat coverage",
 		"typechain": "npx hardhat compile && typechain --outDir typechain --target ethers 'artifacts/*.json'",
