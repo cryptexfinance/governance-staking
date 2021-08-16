@@ -31,7 +31,8 @@ contract DelegatorFactory is Ownable {
       delegatorToDelegatee[address(delegator)] = delegatee_;
    }
 
-   function delegate(address delegator_, uint96 amount_) public {}
-
-   //   function stake(uint256 amount_) public onlyOwner {}
+   function delegate(address delegator_, uint96 amount_) public {
+      Delegator d = Delegator(delegator_);
+      d.stake(msg.sender, amount_);
+   }
 }

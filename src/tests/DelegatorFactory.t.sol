@@ -73,6 +73,7 @@ contract DelegatorFactoryTest is DSTest {
       assertEq(balStaker, 0);
       assertEq(balDelegatee, 0);
       assertEq(balDelegator, amount);
+      assertEq(ctx.getCurrentVotes(delegatee), amount);
 
       //delegation amount should increase also
    }
