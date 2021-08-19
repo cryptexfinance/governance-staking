@@ -33,7 +33,7 @@ contract User {
       address delegator,
       uint96 amount
    ) public {
-      d.removeDelegate(delegator, amount);
+      d.unDelegate(delegator, amount);
    }
 }
 
@@ -150,7 +150,7 @@ contract DelegatorFactoryTest is DSTest {
       assertEq(ctx.getCurrentVotes(delegatee2), amount2);
    }
 
-   function test_removeDelegate(address delegatee, uint96 amount) public {
+   function test_unDelegate(address delegatee, uint96 amount) public {
       if (amount > ctx.totalSupply()) return;
       if (amount == 0) return;
       if (delegatee == address(0)) return;
@@ -166,7 +166,7 @@ contract DelegatorFactoryTest is DSTest {
       delegatorFactory.delegate(delegator, amount);
 
       // Remove Delegate
-      delegatorFactory.removeDelegate(delegator, amount);
+      delegatorFactory.unDelegate(delegator, amount);
       uint256 balDelegatee = ctx.balanceOf(delegatee);
       uint256 balDelegator = ctx.balanceOf(delegator);
       assertEq(ctx.balanceOf(address(this)), prevBalStaker);
@@ -175,7 +175,7 @@ contract DelegatorFactoryTest is DSTest {
       assertEq(ctx.getCurrentVotes(delegatee), 0);
    }
 
-   function test_removeDelegateSpecific(
+   function test_unDelegateSpecific(
       address delegatee,
       uint96 amount,
       uint96 amount2
@@ -197,7 +197,7 @@ contract DelegatorFactoryTest is DSTest {
       delegatorFactory.delegate(delegator, totalAmount);
 
       // Remove Delegate
-      delegatorFactory.removeDelegate(delegator, amount);
+      delegatorFactory.unDelegate(delegator, amount);
       uint256 balDelegatee = ctx.balanceOf(delegatee);
       uint256 balDelegator = ctx.balanceOf(delegator);
       assertEq(ctx.balanceOf(address(this)), prevBalStaker - amount2);
@@ -206,7 +206,7 @@ contract DelegatorFactoryTest is DSTest {
       assertEq(ctx.getCurrentVotes(delegatee), amount2);
 
       // Remove Delegate
-      delegatorFactory.removeDelegate(delegator, amount2);
+      delegatorFactory.unDelegate(delegator, amount2);
       balDelegatee = ctx.balanceOf(delegatee);
       balDelegator = ctx.balanceOf(delegator);
       assertEq(ctx.balanceOf(address(this)), prevBalStaker);
@@ -225,7 +225,7 @@ contract DelegatorFactoryTest is DSTest {
       address delegatee = address(0x1);
       delegatorFactory.createDelegator(delegatee);
       address delegator = delegatorFactory.delegateeToDelegator(delegatee);
-      delegatorFactory.removeDelegate(delegator, 0);
+      delegatorFactory.unDelegate(delegator, 0);
    }
 
    // TODO: should revert on remove value higher than current stake
@@ -245,7 +245,7 @@ contract DelegatorFactoryTest is DSTest {
       uint96 totalAmount = amount + amount2;
       ctx.approve(address(delegatorFactory), totalAmount);
       delegatorFactory.delegate(delegator1, totalAmount);
-      delegatorFactory.removeDelegate(delegator1, amount);
+      delegatorFactory.unDelegate(delegator1, amount);
       ctx.approve(address(delegatorFactory), amount);
       delegatorFactory.delegate(delegator2, amount);
 

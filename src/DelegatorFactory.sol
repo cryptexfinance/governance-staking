@@ -27,7 +27,7 @@ contract DelegatorFactory is Ownable, DSTest {
       address indexed _delegatee,
       uint96 _amount
    );
-   event DelegateRemoved(
+   event Undelegated(
       address indexed _delegator,
       address indexed _delegatee,
       uint96 _amount
@@ -56,12 +56,14 @@ contract DelegatorFactory is Ownable, DSTest {
       Delegator d = Delegator(delegator_);
       IGovernanceToken(token).transferFrom(msg.sender, delegator_, amount_);
       d.stake(msg.sender, amount_);
+      emit Delegated(delegator_, msg.sender, amount_);
    }
 
-   function removeDelegate(address delegator_, uint96 amount_) public {
+   function unDelegate(address delegator_, uint96 amount_) public {
       require(delegators[delegator_], "Not a valid delegator");
       require(amount_ > 0, "Amount must be greater than 0");
       Delegator d = Delegator(delegator_);
       d.removeStake(msg.sender, amount_);
+      emit Undelegated(delegator_, msg.sender, amount_);
    }
 }
