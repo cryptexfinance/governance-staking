@@ -7,4 +7,10 @@ interface IGovernanceToken {
    function delegates(address delegator) external returns (address);
 
    function transfer(address dst, uint256 rawAmount) external returns (bool);
+
+   function transferFrom(
+      address src,
+      address dst,
+      uint256 rawAmount
+   ) external returns (bool);
 }

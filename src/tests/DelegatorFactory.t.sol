@@ -8,12 +8,30 @@ import "../DelegatorFactory.sol";
 import "../mocks/GovernanceToken.sol";
 
 contract User {
+   function approveAmount(
+      GovernanceToken t,
+      DelegatorFactory d,
+      uint96 a
+   ) public {
+      t.approve(address(d), a);
+   }
+
    function doCreateDelegator(DelegatorFactory d, address delegatee) public {
       d.createDelegator(delegatee);
    }
 
-   function doStake(Delegator s, uint256 amount) public {
-      //      s.stake(amount);
+   function doDelegate(
+      DelegatorFactory d,
+      address delegator,
+      uint96 amount
+   ) public {
+      d.delegate(delegator, amount);
+   }
+}
+
+contract FakeDelegator {
+   function stake(address staker_, uint96 amount_) public {
+      // do nothing and keep funds
    }
 }
 
@@ -41,6 +59,7 @@ contract DelegatorFactoryTest is DSTest {
       assertEq(d.delegatee(), delegatee);
       assertEq(delegatorFactory.delegateeToDelegator(delegatee), address(d));
       assertEq(delegatorFactory.delegatorToDelegatee(address(d)), delegatee);
+      assertEq(d.owner(), address(delegatorFactory));
    }
 
    function testFail_invalidCreateDelegator() public {
@@ -54,28 +73,69 @@ contract DelegatorFactoryTest is DSTest {
 
    function test_delegateTo(address delegatee, uint96 amount) public {
       if (amount > ctx.totalSupply()) return;
+      if (amount == 0) return;
       if (delegatee == address(0)) return;
-      ctx.transfer(address(user1), amount);
-      uint256 prevBalStaker = ctx.balanceOf(address(user1));
-      uint256 prevBalDelegatee = ctx.balanceOf(delegatee);
+
+      // create delegator
       delegatorFactory.createDelegator(delegatee);
       address delegator = delegatorFactory.delegateeToDelegator(delegatee);
+
       uint256 prevBalDelegator = ctx.balanceOf(delegator);
-      assertEq(prevBalStaker, amount);
+      uint256 prevBalStaker = ctx.balanceOf(address(this));
+      uint256 prevBalDelegatee = ctx.balanceOf(delegatee);
       assertEq(prevBalDelegatee, 0);
       assertEq(prevBalDelegator, 0);
 
       // Delegate
-      delegatorFactory.delegate(delegatee, amount);
-      uint256 balStaker = ctx.balanceOf(address(user1));
+      ctx.approve(address(delegatorFactory), amount);
+      delegatorFactory.delegate(delegator, amount);
+
       uint256 balDelegatee = ctx.balanceOf(delegatee);
       uint256 balDelegator = ctx.balanceOf(delegator);
-      assertEq(balStaker, 0);
+      assertEq(ctx.balanceOf(address(this)), prevBalStaker - amount);
       assertEq(balDelegatee, 0);
       assertEq(balDelegator, amount);
       assertEq(ctx.getCurrentVotes(delegatee), amount);
+   }
 
-      //delegation amount should increase also
+   function testFail_invalidDelegator() public {
+      uint96 amount = 1 ether;
+      ctx.transfer(address(user1), amount);
+      FakeDelegator faker = new FakeDelegator();
+      user1.approveAmount(ctx, delegatorFactory, amount);
+      user1.doDelegate(delegatorFactory, address(faker), amount);
+   }
+
+   function testFail_invalidAmount() public {
+      address delegatee = address(0x1);
+      delegatorFactory.createDelegator(delegatee);
+      address delegator = delegatorFactory.delegateeToDelegator(delegatee);
+      delegatorFactory.delegate(delegator, 0);
+   }
+
+   function test_multipleDelegators(uint96 amount, uint96 amount2) public {
+      if (amount > ctx.totalSupply() / 2 || amount2 > ctx.totalSupply() / 2)
+         return;
+      if (amount == 0 || amount2 == 0) return;
+      uint256 prevBalStaker = ctx.balanceOf(address(this));
+      address delegatee1 = address(0x1);
+      address delegatee2 = address(0x2);
+      delegatorFactory.createDelegator(delegatee1);
+      delegatorFactory.createDelegator(delegatee2);
+      address delegator1 = delegatorFactory.delegateeToDelegator(delegatee1);
+      address delegator2 = delegatorFactory.delegateeToDelegator(delegatee2);
+      ctx.approve(address(delegatorFactory), amount + amount2);
+      delegatorFactory.delegate(delegator1, amount);
+      delegatorFactory.delegate(delegator2, amount2);
+
+      assertEq(
+         ctx.balanceOf(address(this)),
+         prevBalStaker - (amount + amount2)
+      );
+      assertEq(ctx.balanceOf(delegator1), amount);
+      assertEq(ctx.balanceOf(delegator2), amount2);
+      assertEq(ctx.getCurrentVotes(delegatee1), amount);
+      assertEq(ctx.getCurrentVotes(delegatee2), amount2);
    }
 
    // User should be able to delegate to multiple delegators
@@ -85,4 +145,5 @@ contract DelegatorFactoryTest is DSTest {
    // user should be able to get back all their stake
    // user should earn ctx
    // user should claim ctx rewards
+   // stake should be committed to min X time
 }

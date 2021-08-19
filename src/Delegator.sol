@@ -3,6 +3,7 @@ pragma solidity 0.8.6;
 
 import "@openzeppelin/access/Ownable.sol";
 import "./interfaces/IGovernanceToken.sol";
+import "ds-test/test.sol";
 
 /**
  * @title Delegator Contract
@@ -10,7 +11,7 @@ import "./interfaces/IGovernanceToken.sol";
  * @notice Contract in charge of handling delegations.
  */
 
-contract Delegator is Ownable {
+contract Delegator is Ownable, DSTest {
    address public immutable token;
    mapping(address => uint96) public stakerBalance;
 
