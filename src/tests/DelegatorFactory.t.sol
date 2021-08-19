@@ -27,10 +27,22 @@ contract User {
    ) public {
       d.delegate(delegator, amount);
    }
+
+   function doRemoveDelegate(
+      DelegatorFactory d,
+      address delegator,
+      uint96 amount
+   ) public {
+      d.removeDelegate(delegator, amount);
+   }
 }
 
 contract FakeDelegator {
    function stake(address staker_, uint96 amount_) public {
+      // do nothing and keep funds
+   }
+
+   function removeStake(address staker_, uint96 amount_) public {
       // do nothing and keep funds
    }
 }
@@ -71,7 +83,7 @@ contract DelegatorFactoryTest is DSTest {
       delegatorFactory.createDelegator(delegatee);
    }
 
-   function test_delegateTo(address delegatee, uint96 amount) public {
+   function test_delegate(address delegatee, uint96 amount) public {
       if (amount > ctx.totalSupply()) return;
       if (amount == 0) return;
       if (delegatee == address(0)) return;
@@ -138,11 +150,115 @@ contract DelegatorFactoryTest is DSTest {
       assertEq(ctx.getCurrentVotes(delegatee2), amount2);
    }
 
-   // User should be able to delegate to multiple delegators
-   // user should be able to move their delegation from one account to another
-   // user should be able to move all their delegation from one account to another
-   // user should be able to get back their stake
-   // user should be able to get back all their stake
+   function test_removeDelegate(address delegatee, uint96 amount) public {
+      if (amount > ctx.totalSupply()) return;
+      if (amount == 0) return;
+      if (delegatee == address(0)) return;
+
+      // create delegator
+      delegatorFactory.createDelegator(delegatee);
+      address delegator = delegatorFactory.delegateeToDelegator(delegatee);
+
+      uint256 prevBalStaker = ctx.balanceOf(address(this));
+
+      // Delegate
+      ctx.approve(address(delegatorFactory), amount);
+      delegatorFactory.delegate(delegator, amount);
+
+      // Remove Delegate
+      delegatorFactory.removeDelegate(delegator, amount);
+      uint256 balDelegatee = ctx.balanceOf(delegatee);
+      uint256 balDelegator = ctx.balanceOf(delegator);
+      assertEq(ctx.balanceOf(address(this)), prevBalStaker);
+      assertEq(balDelegatee, 0);
+      assertEq(balDelegator, 0);
+      assertEq(ctx.getCurrentVotes(delegatee), 0);
+   }
+
+   function test_removeDelegateSpecific(
+      address delegatee,
+      uint96 amount,
+      uint96 amount2
+   ) public {
+      if (amount > ctx.totalSupply() / 2 || amount2 > ctx.totalSupply() / 2)
+         return;
+      if (amount == 0 || amount2 == 0) return;
+      if (delegatee == address(0)) return;
+
+      // create delegator
+      delegatorFactory.createDelegator(delegatee);
+      address delegator = delegatorFactory.delegateeToDelegator(delegatee);
+
+      uint256 prevBalStaker = ctx.balanceOf(address(this));
+
+      // Delegate
+      uint96 totalAmount = amount + amount2;
+      ctx.approve(address(delegatorFactory), totalAmount);
+      delegatorFactory.delegate(delegator, totalAmount);
+
+      // Remove Delegate
+      delegatorFactory.removeDelegate(delegator, amount);
+      uint256 balDelegatee = ctx.balanceOf(delegatee);
+      uint256 balDelegator = ctx.balanceOf(delegator);
+      assertEq(ctx.balanceOf(address(this)), prevBalStaker - amount2);
+      assertEq(balDelegatee, 0);
+      assertEq(balDelegator, amount2);
+      assertEq(ctx.getCurrentVotes(delegatee), amount2);
+
+      // Remove Delegate
+      delegatorFactory.removeDelegate(delegator, amount2);
+      balDelegatee = ctx.balanceOf(delegatee);
+      balDelegator = ctx.balanceOf(delegator);
+      assertEq(ctx.balanceOf(address(this)), prevBalStaker);
+      assertEq(balDelegatee, 0);
+      assertEq(balDelegator, 0);
+      assertEq(ctx.getCurrentVotes(delegatee), 0);
+   }
+
+   function testFail_invalidRemoveDelegator() public {
+      uint96 amount = 1 ether;
+      FakeDelegator faker = new FakeDelegator();
+      user1.doRemoveDelegate(delegatorFactory, address(faker), amount);
+   }
+
+   function testFail_invalidRemoveAmount() public {
+      address delegatee = address(0x1);
+      delegatorFactory.createDelegator(delegatee);
+      address delegator = delegatorFactory.delegateeToDelegator(delegatee);
+      delegatorFactory.removeDelegate(delegator, 0);
+   }
+
+   // TODO: should revert on remove value higher than current stake
+
+   function test_moveDelegation(uint96 amount, uint96 amount2) public {
+      if (amount > ctx.totalSupply() / 2 || amount2 > ctx.totalSupply() / 2)
+         return;
+      if (amount == 0 || amount2 == 0) return;
+
+      uint256 prevBalStaker = ctx.balanceOf(address(this));
+      address delegatee1 = address(0x1);
+      address delegatee2 = address(0x2);
+      delegatorFactory.createDelegator(delegatee1);
+      delegatorFactory.createDelegator(delegatee2);
+      address delegator1 = delegatorFactory.delegateeToDelegator(delegatee1);
+      address delegator2 = delegatorFactory.delegateeToDelegator(delegatee2);
+      uint96 totalAmount = amount + amount2;
+      ctx.approve(address(delegatorFactory), totalAmount);
+      delegatorFactory.delegate(delegator1, totalAmount);
+      delegatorFactory.removeDelegate(delegator1, amount);
+      ctx.approve(address(delegatorFactory), amount);
+      delegatorFactory.delegate(delegator2, amount);
+
+      assertEq(
+         ctx.balanceOf(address(this)),
+         prevBalStaker - (amount + amount2)
+      );
+      assertEq(ctx.balanceOf(delegator1), amount2);
+      assertEq(ctx.balanceOf(delegator2), amount);
+      assertEq(ctx.getCurrentVotes(delegatee1), amount2);
+      assertEq(ctx.getCurrentVotes(delegatee2), amount);
+   }
+
    // user should earn ctx
    // user should claim ctx rewards
    // stake should be committed to min X time
