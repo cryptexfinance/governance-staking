@@ -14,9 +14,11 @@ import "ds-test/test.sol";
 
 contract DelegatorFactory is Ownable, DSTest {
    address public immutable token;
+   uint256 public waitTime;
    mapping(address => address) public delegatorToDelegatee;
    mapping(address => address) public delegateeToDelegator;
    mapping(address => bool) public delegators;
+   mapping(address => mapping(address => uint256)) public stakerWaitTime;
 
    event DelegatorCreated(
       address indexed _delegator,
@@ -33,8 +35,9 @@ contract DelegatorFactory is Ownable, DSTest {
       uint96 _amount
    );
 
-   constructor(address token_) {
+   constructor(address token_, uint256 waitTime_) {
       token = token_;
+      waitTime = waitTime_;
    }
 
    function createDelegator(address delegatee_) public {
@@ -54,14 +57,19 @@ contract DelegatorFactory is Ownable, DSTest {
       require(delegators[delegator_], "Not a valid delegator");
       require(amount_ > 0, "Amount must be greater than 0");
       Delegator d = Delegator(delegator_);
-      IGovernanceToken(token).transferFrom(msg.sender, delegator_, amount_);
       d.stake(msg.sender, amount_);
+      stakerWaitTime[msg.sender][delegator_] = block.timestamp + waitTime;
+      IGovernanceToken(token).transferFrom(msg.sender, delegator_, amount_);
       emit Delegated(delegator_, msg.sender, amount_);
    }
 
    function unDelegate(address delegator_, uint96 amount_) public {
       require(delegators[delegator_], "Not a valid delegator");
       require(amount_ > 0, "Amount must be greater than 0");
+      require(
+         block.timestamp >= stakerWaitTime[msg.sender][delegator_],
+         "Need to wait the minimum staking period"
+      );
       Delegator d = Delegator(delegator_);
       d.removeStake(msg.sender, amount_);
       emit Undelegated(delegator_, msg.sender, amount_);

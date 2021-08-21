@@ -2,6 +2,7 @@
 pragma solidity 0.8.6;
 
 import "ds-test/test.sol";
+import "ds-test/hevm.sol";
 
 import "../Delegator.sol";
 import "../DelegatorFactory.sol";
@@ -51,16 +52,20 @@ contract DelegatorFactoryTest is DSTest {
    DelegatorFactory delegatorFactory;
    GovernanceToken ctx;
    User user1;
+   Hevm hevm;
+   uint256 waitTime = 1 weeks;
 
    function setUp() public {
+      hevm = Hevm(HEVM_ADDRESS);
       ctx = new GovernanceToken(address(this), address(this), block.timestamp);
-      delegatorFactory = new DelegatorFactory(address(ctx));
+      delegatorFactory = new DelegatorFactory(address(ctx), waitTime);
       user1 = new User();
    }
 
    function test_parameters() public {
       assertEq(delegatorFactory.owner(), address(this));
       assertEq(delegatorFactory.token(), address(ctx));
+      assertEq(delegatorFactory.waitTime(), waitTime);
    }
 
    function test_createDelegator(address delegatee) public {
@@ -108,6 +113,10 @@ contract DelegatorFactoryTest is DSTest {
       assertEq(balDelegatee, 0);
       assertEq(balDelegator, amount);
       assertEq(ctx.getCurrentVotes(delegatee), amount);
+      assertEq(
+         delegatorFactory.stakerWaitTime(address(this), delegator),
+         waitTime
+      );
    }
 
    function testFail_invalidDelegator() public {
@@ -138,6 +147,7 @@ contract DelegatorFactoryTest is DSTest {
       address delegator2 = delegatorFactory.delegateeToDelegator(delegatee2);
       ctx.approve(address(delegatorFactory), amount + amount2);
       delegatorFactory.delegate(delegator1, amount);
+      hevm.warp(waitTime);
       delegatorFactory.delegate(delegator2, amount2);
 
       assertEq(
@@ -148,6 +158,14 @@ contract DelegatorFactoryTest is DSTest {
       assertEq(ctx.balanceOf(delegator2), amount2);
       assertEq(ctx.getCurrentVotes(delegatee1), amount);
       assertEq(ctx.getCurrentVotes(delegatee2), amount2);
+      assertEq(
+         delegatorFactory.stakerWaitTime(address(this), delegator1),
+         waitTime
+      );
+      assertEq(
+         delegatorFactory.stakerWaitTime(address(this), delegator2),
+         2 weeks
+      );
    }
 
    function test_unDelegate(address delegatee, uint96 amount) public {
@@ -165,6 +183,9 @@ contract DelegatorFactoryTest is DSTest {
       ctx.approve(address(delegatorFactory), amount);
       delegatorFactory.delegate(delegator, amount);
 
+      // Time Skip
+      hevm.warp(waitTime + 1 seconds);
+
       // Remove Delegate
       delegatorFactory.unDelegate(delegator, amount);
       uint256 balDelegatee = ctx.balanceOf(delegatee);
@@ -173,6 +194,19 @@ contract DelegatorFactoryTest is DSTest {
       assertEq(balDelegatee, 0);
       assertEq(balDelegator, 0);
       assertEq(ctx.getCurrentVotes(delegatee), 0);
+   }
+
+   function testFail_unDelegateNoWait(address delegatee, uint96 amount) public {
+      // create delegator
+      delegatorFactory.createDelegator(delegatee);
+      address delegator = delegatorFactory.delegateeToDelegator(delegatee);
+
+      // Delegate
+      ctx.approve(address(delegatorFactory), amount);
+      delegatorFactory.delegate(delegator, amount);
+
+      // Remove Delegate
+      delegatorFactory.unDelegate(delegator, (amount));
    }
 
    function test_unDelegateSpecific(
@@ -195,6 +229,9 @@ contract DelegatorFactoryTest is DSTest {
       uint96 totalAmount = amount + amount2;
       ctx.approve(address(delegatorFactory), totalAmount);
       delegatorFactory.delegate(delegator, totalAmount);
+
+      // Time Skip
+      hevm.warp(waitTime + 1 seconds);
 
       // Remove Delegate
       delegatorFactory.unDelegate(delegator, amount);
@@ -225,10 +262,28 @@ contract DelegatorFactoryTest is DSTest {
       address delegatee = address(0x1);
       delegatorFactory.createDelegator(delegatee);
       address delegator = delegatorFactory.delegateeToDelegator(delegatee);
+      // Time Skip
+      hevm.warp(waitTime + 1 seconds);
       delegatorFactory.unDelegate(delegator, 0);
    }
 
-   // TODO: should revert on remove value higher than current stake
+   function testFail_invalidUnDelegateAmount(address delegatee, uint96 amount)
+      public
+   {
+      // create delegator
+      delegatorFactory.createDelegator(delegatee);
+      address delegator = delegatorFactory.delegateeToDelegator(delegatee);
+
+      // Delegate
+      ctx.approve(address(delegatorFactory), amount);
+      delegatorFactory.delegate(delegator, amount);
+
+      // Time Skip
+      hevm.warp(waitTime + 1 seconds);
+
+      // Remove Delegate
+      delegatorFactory.unDelegate(delegator, (amount + 1));
+   }
 
    function test_moveDelegation(uint96 amount, uint96 amount2) public {
       if (amount > ctx.totalSupply() / 2 || amount2 > ctx.totalSupply() / 2)
@@ -245,6 +300,10 @@ contract DelegatorFactoryTest is DSTest {
       uint96 totalAmount = amount + amount2;
       ctx.approve(address(delegatorFactory), totalAmount);
       delegatorFactory.delegate(delegator1, totalAmount);
+
+      // Time Skip
+      hevm.warp(waitTime + 1 seconds);
+
       delegatorFactory.unDelegate(delegator1, amount);
       ctx.approve(address(delegatorFactory), amount);
       delegatorFactory.delegate(delegator2, amount);
@@ -257,6 +316,10 @@ contract DelegatorFactoryTest is DSTest {
       assertEq(ctx.balanceOf(delegator2), amount);
       assertEq(ctx.getCurrentVotes(delegatee1), amount2);
       assertEq(ctx.getCurrentVotes(delegatee2), amount);
+      assertEq(
+         delegatorFactory.stakerWaitTime(address(this), delegator2),
+         2 weeks + 1 seconds
+      );
    }
 
    // user should earn ctx
