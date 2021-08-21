@@ -36,6 +36,10 @@ contract User {
    ) public {
       d.unDelegate(delegator, amount);
    }
+
+   function doUpdateWaitTime(DelegatorFactory d, uint256 waitTime) public {
+      d.updateWaitTime(waitTime);
+   }
 }
 
 contract FakeDelegator {
@@ -58,7 +62,11 @@ contract DelegatorFactoryTest is DSTest {
    function setUp() public {
       hevm = Hevm(HEVM_ADDRESS);
       ctx = new GovernanceToken(address(this), address(this), block.timestamp);
-      delegatorFactory = new DelegatorFactory(address(ctx), waitTime);
+      delegatorFactory = new DelegatorFactory(
+         address(ctx),
+         waitTime,
+         address(this)
+      );
       user1 = new User();
    }
 
@@ -322,7 +330,16 @@ contract DelegatorFactoryTest is DSTest {
       );
    }
 
+   function test_updateWaitTime(uint256 newTime) public {
+      assertEq(delegatorFactory.waitTime(), waitTime);
+      delegatorFactory.updateWaitTime(newTime);
+      assertEq(delegatorFactory.waitTime(), newTime);
+   }
+
+   function testFail_updateWaitTimeNotAdmin(uint256 newTime) public {
+      user1.doUpdateWaitTime(delegatorFactory, newTime);
+   }
+
    // user should earn ctx
    // user should claim ctx rewards
-   // stake should be committed to min X time
 }

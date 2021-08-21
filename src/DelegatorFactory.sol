@@ -35,9 +35,16 @@ contract DelegatorFactory is Ownable, DSTest {
       uint96 _amount
    );
 
-   constructor(address token_, uint256 waitTime_) {
+   event WaitTimeUpdated(uint256 _waitTime);
+
+   constructor(
+      address token_,
+      uint256 waitTime_,
+      address timelock_
+   ) {
       token = token_;
       waitTime = waitTime_;
+      transferOwnership(timelock_);
    }
 
    function createDelegator(address delegatee_) public {
@@ -73,5 +80,10 @@ contract DelegatorFactory is Ownable, DSTest {
       Delegator d = Delegator(delegator_);
       d.removeStake(msg.sender, amount_);
       emit Undelegated(delegator_, msg.sender, amount_);
+   }
+
+   function updateWaitTime(uint256 waitTime_) public onlyOwner {
+      waitTime = waitTime_;
+      emit WaitTimeUpdated(waitTime_);
    }
 }
