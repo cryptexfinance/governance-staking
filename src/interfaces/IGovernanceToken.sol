@@ -13,4 +13,6 @@ interface IGovernanceToken {
       address dst,
       uint256 rawAmount
    ) external returns (bool);
+
+   function balanceOf(address src) external returns (uint256);
 }

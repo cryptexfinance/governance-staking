@@ -2,7 +2,6 @@
 pragma solidity 0.8.6;
 
 import "ds-test/test.sol";
-import "ds-test/hevm.sol";
 
 import "../Delegator.sol";
 import "../DelegatorFactory.sol";
@@ -56,13 +55,13 @@ contract DelegatorFactoryTest is DSTest {
    DelegatorFactory delegatorFactory;
    GovernanceToken ctx;
    User user1;
-   Hevm hevm;
    uint256 waitTime = 1 weeks;
 
    function setUp() public {
       hevm = Hevm(HEVM_ADDRESS);
       ctx = new GovernanceToken(address(this), address(this), block.timestamp);
       delegatorFactory = new DelegatorFactory(
+         address(ctx),
          address(ctx),
          waitTime,
          address(this)
@@ -72,8 +71,9 @@ contract DelegatorFactoryTest is DSTest {
 
    function test_parameters() public {
       assertEq(delegatorFactory.owner(), address(this));
-      assertEq(delegatorFactory.token(), address(ctx));
+      assertEq(delegatorFactory.stakingToken(), address(ctx));
       assertEq(delegatorFactory.waitTime(), waitTime);
+      assertEq(delegatorFactory.rewardsToken(), address(ctx));
    }
 
    function test_createDelegator(address delegatee) public {
