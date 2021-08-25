@@ -15,6 +15,7 @@ import "ds-test/test.sol";
  */
 
 contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
+   /// @notice Using open zeppelin libraries
    using SafeMath for uint256;
 
    /// @notice Address of the staking governance token
