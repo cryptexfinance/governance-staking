@@ -13,22 +13,22 @@ import "ds-test/test.sol";
 
 contract Delegator is Ownable, DSTest {
    address public immutable token;
-   mapping(address => uint96) public stakerBalance;
+   mapping(address => uint256) public stakerBalance;
 
    constructor(address delegatee_, address token_) {
       token = token_;
       IGovernanceToken(token_).delegate(delegatee_);
    }
 
-   function delegatee() public returns (address) {
+   function delegatee() external returns (address) {
       return IGovernanceToken(token).delegates(address(this));
    }
 
-   function stake(address staker_, uint96 amount_) public onlyOwner {
+   function stake(address staker_, uint256 amount_) external onlyOwner {
       stakerBalance[staker_] += amount_;
    }
 
-   function removeStake(address staker_, uint96 amount_) public onlyOwner {
+   function removeStake(address staker_, uint256 amount_) external onlyOwner {
       stakerBalance[staker_] -= amount_;
       IGovernanceToken(token).transfer(staker_, amount_);
    }

@@ -7,11 +7,11 @@ import "../Delegator.sol";
 import "../mocks/GovernanceToken.sol";
 
 contract User {
-   function doStake(Delegator d, uint96 amount) public {
+   function doStake(Delegator d, uint256 amount) public {
       d.stake(address(this), amount);
    }
 
-   function doRemoveStake(Delegator d, uint96 amount) public {
+   function doRemoveStake(Delegator d, uint256 amount) public {
       d.removeStake(address(this), amount);
    }
 }
@@ -35,7 +35,7 @@ contract DelegatorTest is DSTest {
       assertEq(ctx.delegates(address(delegator)), delegatee);
    }
 
-   function test_stake(address staker, uint96 amount) public {
+   function test_stake(address staker, uint256 amount) public {
       if (amount >= ctx.totalSupply()) return;
       if (staker == address(0)) return;
       assertEq(delegator.stakerBalance((staker)), 0);
@@ -46,11 +46,11 @@ contract DelegatorTest is DSTest {
       assertEq(ctx.balanceOf(address(delegator)), amount);
    }
 
-   function testFail_stake_notOwner(uint96 amount) public {
+   function testFail_stake_notOwner(uint256 amount) public {
       user1.doStake(delegator, amount);
    }
 
-   function test_removeStake(address staker, uint96 amount) public {
+   function test_removeStake(address staker, uint256 amount) public {
       if (amount >= ctx.totalSupply()) return;
       if (staker == address(0)) return;
       ctx.transfer(address(delegator), amount); //simulate transfer from owner
@@ -65,13 +65,13 @@ contract DelegatorTest is DSTest {
       assertEq(ctx.balanceOf(staker), amount);
    }
 
-   function testFail_removeStake_notOwner(uint96 amount) public {
+   function testFail_removeStake_notOwner(uint256 amount) public {
       ctx.transfer(address(delegator), amount); //simulate transfer from owner
       delegator.stake(address(user1), amount);
       user1.doRemoveStake(delegator, amount);
    }
 
-   function testFail_removeStake_notEnoughBalance(uint96 amount) public {
+   function testFail_removeStake_notEnoughBalance(uint256 amount) public {
       ctx.transfer(address(delegator), amount); //simulate transfer from owner
       delegator.stake(address(user1), amount);
       delegator.removeStake(address(user1), amount + 1);

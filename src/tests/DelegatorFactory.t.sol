@@ -11,7 +11,7 @@ contract User {
    function approveAmount(
       GovernanceToken t,
       DelegatorFactory d,
-      uint96 a
+      uint256 a
    ) public {
       t.approve(address(d), a);
    }
@@ -23,7 +23,7 @@ contract User {
    function doDelegate(
       DelegatorFactory d,
       address delegator,
-      uint96 amount
+      uint256 amount
    ) public {
       d.delegate(delegator, amount);
    }
@@ -31,7 +31,7 @@ contract User {
    function doRemoveDelegate(
       DelegatorFactory d,
       address delegator,
-      uint96 amount
+      uint256 amount
    ) public {
       d.unDelegate(delegator, amount);
    }
@@ -42,11 +42,11 @@ contract User {
 }
 
 contract FakeDelegator {
-   function stake(address staker_, uint96 amount_) public {
+   function stake(address staker_, uint256 amount_) public {
       // do nothing and keep funds
    }
 
-   function removeStake(address staker_, uint96 amount_) public {
+   function removeStake(address staker_, uint256 amount_) public {
       // do nothing and keep funds
    }
 }
@@ -96,7 +96,7 @@ contract DelegatorFactoryTest is DSTest {
       delegatorFactory.createDelegator(delegatee);
    }
 
-   function test_delegate(address delegatee, uint96 amount) public {
+   function test_delegate(address delegatee, uint256 amount) public {
       if (amount > ctx.totalSupply()) return;
       if (amount == 0) return;
       if (delegatee == address(0)) return;
@@ -128,7 +128,7 @@ contract DelegatorFactoryTest is DSTest {
    }
 
    function testFail_invalidDelegator() public {
-      uint96 amount = 1 ether;
+      uint256 amount = 1 ether;
       ctx.transfer(address(user1), amount);
       FakeDelegator faker = new FakeDelegator();
       user1.approveAmount(ctx, delegatorFactory, amount);
@@ -142,7 +142,7 @@ contract DelegatorFactoryTest is DSTest {
       delegatorFactory.delegate(delegator, 0);
    }
 
-   function test_multipleDelegators(uint96 amount, uint96 amount2) public {
+   function test_multipleDelegators(uint256 amount, uint256 amount2) public {
       if (amount > ctx.totalSupply() / 2 || amount2 > ctx.totalSupply() / 2)
          return;
       if (amount == 0 || amount2 == 0) return;
@@ -176,7 +176,7 @@ contract DelegatorFactoryTest is DSTest {
       );
    }
 
-   function test_unDelegate(address delegatee, uint96 amount) public {
+   function test_unDelegate(address delegatee, uint256 amount) public {
       if (amount > ctx.totalSupply()) return;
       if (amount == 0) return;
       if (delegatee == address(0)) return;
@@ -204,7 +204,9 @@ contract DelegatorFactoryTest is DSTest {
       assertEq(ctx.getCurrentVotes(delegatee), 0);
    }
 
-   function testFail_unDelegateNoWait(address delegatee, uint96 amount) public {
+   function testFail_unDelegateNoWait(address delegatee, uint256 amount)
+      public
+   {
       // create delegator
       delegatorFactory.createDelegator(delegatee);
       address delegator = delegatorFactory.delegateeToDelegator(delegatee);
@@ -219,8 +221,8 @@ contract DelegatorFactoryTest is DSTest {
 
    function test_unDelegateSpecific(
       address delegatee,
-      uint96 amount,
-      uint96 amount2
+      uint256 amount,
+      uint256 amount2
    ) public {
       if (amount > ctx.totalSupply() / 2 || amount2 > ctx.totalSupply() / 2)
          return;
@@ -234,7 +236,7 @@ contract DelegatorFactoryTest is DSTest {
       uint256 prevBalStaker = ctx.balanceOf(address(this));
 
       // Delegate
-      uint96 totalAmount = amount + amount2;
+      uint256 totalAmount = amount + amount2;
       ctx.approve(address(delegatorFactory), totalAmount);
       delegatorFactory.delegate(delegator, totalAmount);
 
@@ -261,7 +263,7 @@ contract DelegatorFactoryTest is DSTest {
    }
 
    function testFail_invalidRemoveDelegator() public {
-      uint96 amount = 1 ether;
+      uint256 amount = 1 ether;
       FakeDelegator faker = new FakeDelegator();
       user1.doRemoveDelegate(delegatorFactory, address(faker), amount);
    }
@@ -275,7 +277,7 @@ contract DelegatorFactoryTest is DSTest {
       delegatorFactory.unDelegate(delegator, 0);
    }
 
-   function testFail_invalidUnDelegateAmount(address delegatee, uint96 amount)
+   function testFail_invalidUnDelegateAmount(address delegatee, uint256 amount)
       public
    {
       // create delegator
@@ -293,7 +295,7 @@ contract DelegatorFactoryTest is DSTest {
       delegatorFactory.unDelegate(delegator, (amount + 1));
    }
 
-   function test_moveDelegation(uint96 amount, uint96 amount2) public {
+   function test_moveDelegation(uint256 amount, uint256 amount2) public {
       if (amount > ctx.totalSupply() / 2 || amount2 > ctx.totalSupply() / 2)
          return;
       if (amount == 0 || amount2 == 0) return;
@@ -305,7 +307,7 @@ contract DelegatorFactoryTest is DSTest {
       delegatorFactory.createDelegator(delegatee2);
       address delegator1 = delegatorFactory.delegateeToDelegator(delegatee1);
       address delegator2 = delegatorFactory.delegateeToDelegator(delegatee2);
-      uint96 totalAmount = amount + amount2;
+      uint256 totalAmount = amount + amount2;
       ctx.approve(address(delegatorFactory), totalAmount);
       delegatorFactory.delegate(delegator1, totalAmount);
 

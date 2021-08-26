@@ -65,27 +65,24 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
    mapping(address => uint256) private _balances;
 
    /// @notice An event emitted when a Delegator is created
-   event DelegatorCreated(
-      address indexed _delegator,
-      address indexed _delegatee
-   );
+   event DelegatorCreated(address indexed delegator, address indexed delegatee);
 
    /// @notice An event emitted when an user has staked and delegated
    event Delegated(
-      address indexed _delegator,
-      address indexed _delegatee,
-      uint96 _amount
+      address indexed delegator,
+      address indexed delegatee,
+      uint256 amount
    );
 
    /// @notice An event emitted when an user removes stake and undelegated
    event Undelegated(
-      address indexed _delegator,
-      address indexed _delegatee,
-      uint96 _amount
+      address indexed delegator,
+      address indexed delegatee,
+      uint256 amount
    );
 
-   /// @notice An event emmited when the minimum wait time is updated
-   event WaitTimeUpdated(uint256 _waitTime);
+   /// @notice An event emitted when the minimum wait time is updated
+   event WaitTimeUpdated(uint256 waitTime);
 
    /// @notice An event emitted when a reward is added
    event RewardAdded(uint256 reward);
@@ -123,35 +120,78 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
     * @notice Updates the reward and time on call.
     * @param _account address
     */
-   modifier updateReward(address _account) {
+   modifier updateReward(address account_) {
       rewardPerTokenStored = rewardPerToken();
       lastUpdateTime = lastTimeRewardApplicable();
 
-      if (_account != address(0)) {
-         rewards[_account] = earned(_account);
-         userRewardPerTokenPaid[_account] = rewardPerTokenStored;
+      if (account_ != address(0)) {
+         rewards[account_] = earned(account_);
+         userRewardPerTokenPaid[account_] = rewardPerTokenStored;
       }
       _;
    }
 
-   /// @notice Returns the total amount of staked tokens.
-   function totalSupply() external view returns (uint256) {
-      return _totalSupply;
+   /// @notice Removes all stake and transfers all rewards to the staker.
+   function exit(address delegator_) external {
+      unDelegate(delegator_, uint256(_balances[msg.sender]));
+      getReward();
    }
 
    /**
-    * @notice Returns the amount of staked tokens from specific user.
-    * @param _account address
+    * @notice Notifies the contract that reward has been added to be given.
+    * @param _reward uint
+    * @dev Only owner  can call it
+    * @dev Increases duration of rewards
     */
-   function balanceOf(address _account) external view returns (uint256) {
-      return _balances[_account];
+   function notifyRewardAmount(uint256 reward_)
+      external
+      onlyOwner
+      updateReward(address(0))
+   {
+      if (block.timestamp >= periodFinish) {
+         rewardRate = reward_.div(rewardsDuration);
+      } else {
+         uint256 remaining = periodFinish.sub(block.timestamp);
+         uint256 leftover = remaining.mul(rewardRate);
+         rewardRate = reward_.add(leftover).div(rewardsDuration);
+      }
+
+      // Ensure the provided reward amount is not more than the balance in the contract.
+      // This keeps the reward rate in the right range, preventing overflows due to
+      // very high values of rewardRate in the earned and rewardsPerToken functions;
+      // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
+      uint256 balance = IGovernanceToken(rewardsToken).balanceOf(address(this));
+      require(
+         rewardRate <= balance.div(rewardsDuration),
+         "LiquidityReward::notifyRewardAmount: Provided reward too high"
+      );
+
+      lastUpdateTime = block.timestamp;
+      periodFinish = block.timestamp.add(rewardsDuration);
+      emit RewardAdded(reward_);
    }
 
-   function getRewardForDuration() external view returns (uint256) {
-      return rewardRate.mul(rewardsDuration);
+   /**
+    * @notice  Updates the reward duration
+    * @param _rewardsDuration uint
+    * @dev Only owner  can call it
+    * @dev Previous rewards must be complete
+    */
+   function setRewardsDuration(uint256 rewardsDuration_) external onlyOwner {
+      require(
+         block.timestamp > periodFinish,
+         "LiquidityReward::setRewardsDuration: Previous rewards period must be complete before changing the duration for the new period"
+      );
+      rewardsDuration = rewardsDuration_;
+      emit RewardsDurationUpdated(rewardsDuration);
    }
 
-   function createDelegator(address delegatee_) public {
+   /**
+    * @notice Creates a new delegator contract that delegates all votes to delegatee_
+    * @param delegatee_ address that will be receiving all votes
+    * @dev only one delegator contract pointing to the same delegatee can exist
+    */
+   function createDelegator(address delegatee_) external {
       require(delegatee_ != address(0), "Delegatee can't be 0");
       require(
          delegateeToDelegator[delegatee_] == address(0),
@@ -164,7 +204,19 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
       emit DelegatorCreated(address(delegator), delegatee_);
    }
 
-   function delegate(address delegator_, uint96 amount_) public {
+   /**
+    * @notice Stakes to delegator_ the amount_ specified
+    * @param delegator_ contract address where to send the amount_
+    * @param amount_ uint to be staked and delegated
+    * @dev Delegator must be valid and amount has to be greater than 0
+    * @dev amount_ is transferred to the delegator contract and staker starts earning rewards if active
+    * @dev updates rewards on call
+    */
+   function delegate(address delegator_, uint256 amount_)
+      external
+      nonReentrant
+      updateReward(msg.sender)
+   {
       require(delegators[delegator_], "Not a valid delegator");
       require(amount_ > 0, "Amount must be greater than 0");
       _totalSupply = _totalSupply.add(amount_);
@@ -180,76 +232,91 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
       emit Delegated(delegator_, msg.sender, amount_);
    }
 
-   /// @notice Removes all stake and transfers all rewards to the staker.
-   function exit(address delegator_) external {
-      unDelegate(delegator_, uint96(_balances[msg.sender]));
-      getReward();
-   }
-
    /**
-    * @notice Notifies the contract that reward has been added to be given.
-    * @param _reward uint
-    * @dev Only owner  can call it
-    * @dev Increases duration of rewards
+    * @notice Removes amount_ from delegator_
+    * @param delegator_ contract address where to remove the stake from
+    * @param amount_ uint to be removed from stake and undelegated
+    * @dev Delegator must be valid and amount has to be greater than 0
+    * @dev amount_ must be <= that current user stake
+    * @dev amount_ is transferred from the  delegator contract to the staker
+    * @dev updates rewards on call
+    * @dev requires that at least waitTime has passed since delegation to unDelegate
     */
-   function notifyRewardAmount(uint256 _reward)
+   function unDelegate(address delegator_, uint256 amount_)
       external
-      onlyOwner
-      updateReward(address(0))
+      nonReentrant
+      updateReward(msg.sender)
    {
-      if (block.timestamp >= periodFinish) {
-         rewardRate = _reward.div(rewardsDuration);
-      } else {
-         uint256 remaining = periodFinish.sub(block.timestamp);
-         uint256 leftover = remaining.mul(rewardRate);
-         rewardRate = _reward.add(leftover).div(rewardsDuration);
-      }
-
-      // Ensure the provided reward amount is not more than the balance in the contract.
-      // This keeps the reward rate in the right range, preventing overflows due to
-      // very high values of rewardRate in the earned and rewardsPerToken functions;
-      // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
-      uint256 balance = IGovernanceToken(rewardsToken).balanceOf(address(this));
-      require(
-         rewardRate <= balance.div(rewardsDuration),
-         "LiquidityReward::notifyRewardAmount: Provided reward too high"
-      );
-
-      lastUpdateTime = block.timestamp;
-      periodFinish = block.timestamp.add(rewardsDuration);
-      emit RewardAdded(_reward);
-   }
-
-   /**
-    * @notice  Updates the reward duration
-    * @param _rewardsDuration uint
-    * @dev Only owner  can call it
-    * @dev Previous rewards must be complete
-    */
-   function setRewardsDuration(uint256 _rewardsDuration) external onlyOwner {
-      require(
-         block.timestamp > periodFinish,
-         "LiquidityReward::setRewardsDuration: Previous rewards period must be complete before changing the duration for the new period"
-      );
-      rewardsDuration = _rewardsDuration;
-      emit RewardsDurationUpdated(rewardsDuration);
-   }
-
-   function unDelegate(address delegator_, uint96 amount_) public {
       require(delegators[delegator_], "Not a valid delegator");
       require(amount_ > 0, "Amount must be greater than 0");
       require(
          block.timestamp >= stakerWaitTime[msg.sender][delegator_],
          "Need to wait the minimum staking period"
       );
+      _totalSupply = _totalSupply.sub(amount_);
+      _balances[msg.sender] = _balances[msg.sender].sub(amount_);
       Delegator d = Delegator(delegator_);
       d.removeStake(msg.sender, amount_);
       emit Undelegated(delegator_, msg.sender, amount_);
    }
 
-   function updateWaitTime(uint256 waitTime_) public onlyOwner {
+   /**
+    * @notice updates the min wait time between delegation and unDelegation
+    * @param waitTime_ uint new wait time
+    * @dev only the owner can call it
+    */
+   function updateWaitTime(uint256 waitTime_) external onlyOwner {
       waitTime = waitTime_;
       emit WaitTimeUpdated(waitTime_);
+   }
+
+   /// @notice Returns the total amount of staked tokens.
+   function totalSupply() external view returns (uint256) {
+      return _totalSupply;
+   }
+
+   /**
+    * @notice Returns the amount of staked tokens from specific user.
+    * @param _account address
+    */
+   function balanceOf(address account_) external view returns (uint256) {
+      return _balances[account_];
+   }
+
+   function getRewardForDuration() external view returns (uint256) {
+      return rewardRate.mul(rewardsDuration);
+   }
+
+   /**
+    * @notice Remove staking token and transfer back to staker
+    * @param _amount uint
+    * @dev updates rewards on call
+    */
+   function withdraw(uint256 amount_)
+      public
+      nonReentrant
+      updateReward(msg.sender)
+   {
+      require(amount_ > 0, "LiquidityReward::withdraw: Cannot withdraw 0");
+      _totalSupply = _totalSupply.sub(amount_);
+      _balances[msg.sender] = _balances[msg.sender].sub(amount_);
+      IGovernanceToken(stakingToken).transfer(msg.sender, amount_);
+      //      emit Withdrawn(msg.sender, _amount);
+   }
+
+   /**
+    * @notice Transfers to the caller the current amount of rewards tokens earned.
+    * @dev updates rewards on call
+    * @dev from the total reward a vestingRatio amount is locked into vesting and the rest is transfered
+    * @dev if vesting period has passed transfer all rewards
+    */
+   function getReward() public nonReentrant updateReward(msg.sender) {
+      uint256 reward = rewards[msg.sender];
+      if (reward > 0) {
+         rewards[msg.sender] = 0;
+         IGovernanceToken(rewardsToken).transfer(msg.sender, reward);
+         emit RewardPaid(msg.sender, reward);
+      }
    }
 
    /// @notice Returns the minimum between current block timestamp or the finish period of rewards.
@@ -277,12 +344,12 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
     * @notice Returns the amount of reward tokens a user has earned.
     * @param _account address
     */
-   function earned(address _account) public view returns (uint256) {
+   function earned(address account_) public view returns (uint256) {
       return
-         _balances[_account]
-            .mul(rewardPerToken().sub(userRewardPerTokenPaid[_account]))
+         _balances[account_]
+            .mul(rewardPerToken().sub(userRewardPerTokenPaid[account_]))
             .div(1e18)
-            .add(rewards[_account]);
+            .add(rewards[account_]);
    }
 
    /**
@@ -290,39 +357,7 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
     * @param _a uint
     * @param _b uint
     */
-   function min(uint256 _a, uint256 _b) public pure returns (uint256) {
-      return _a < _b ? _a : _b;
-   }
-
-   /**
-    * @notice Remove staking token and transfer back to staker
-    * @param _amount uint
-    * @dev updates rewards on call
-    */
-   function withdraw(uint256 _amount)
-      public
-      nonReentrant
-      updateReward(msg.sender)
-   {
-      require(_amount > 0, "LiquidityReward::withdraw: Cannot withdraw 0");
-      _totalSupply = _totalSupply.sub(_amount);
-      _balances[msg.sender] = _balances[msg.sender].sub(_amount);
-      IGovernanceToken(stakingToken).transfer(msg.sender, _amount);
-      //      emit Withdrawn(msg.sender, _amount);
-   }
-
-   /**
-    * @notice Transfers to the caller the current amount of rewards tokens earned.
-    * @dev updates rewards on call
-    * @dev from the total reward a vestingRatio amount is locked into vesting and the rest is transfered
-    * @dev if vesting period has passed transfer all rewards
-    */
-   function getReward() public nonReentrant updateReward(msg.sender) {
-      uint256 reward = rewards[msg.sender];
-      if (reward > 0) {
-         rewards[msg.sender] = 0;
-         IGovernanceToken(rewardsToken).transfer(msg.sender, reward);
-         emit RewardPaid(msg.sender, reward);
-      }
+   function min(uint256 a_, uint256 b_) public pure returns (uint256) {
+      return a_ < b_ ? a_ : b_;
    }
 }
