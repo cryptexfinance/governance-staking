@@ -18,6 +18,8 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
    /// @notice Using open zeppelin libraries
    using SafeMath for uint256;
 
+   /* ========== STATE VARIABLES ========== */
+
    /// @notice Address of the staking governance token
    address public immutable stakingToken;
 
@@ -32,7 +34,7 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
    uint256 public rewardRate = 0;
 
    /// @notice How long the rewards lasts, it updates when more rewards are added
-   uint256 public rewardsDuration = 186 days;
+   uint256 public rewardsDuration = 186 days; //TODO: update to real value
 
    /// @notice Last time rewards were updated
    uint256 public lastUpdateTime;
@@ -64,18 +66,20 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
    /// @dev Tracks the amount of staked tokens per user
    mapping(address => uint256) private _balances;
 
+   /* ========== EVENTS ========== */
+
    /// @notice An event emitted when a Delegator is created
    event DelegatorCreated(address indexed delegator, address indexed delegatee);
 
    /// @notice An event emitted when an user has staked and delegated
-   event Delegated(
+   event Staked(
       address indexed delegator,
       address indexed delegatee,
       uint256 amount
    );
 
    /// @notice An event emitted when an user removes stake and undelegated
-   event Undelegated(
+   event Withdrawn(
       address indexed delegator,
       address indexed delegatee,
       uint256 amount
@@ -93,8 +97,7 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
    /// @notice An event emitted when the rewards duration is updated
    event RewardsDurationUpdated(uint256 newDuration);
 
-   /// @notice An event emitted when a erc20 token is recovered
-   event Recovered(address token, uint256 amount);
+   /* ========== CONSTRUCTOR ========== */
 
    /**
     * @notice Constructor
@@ -116,9 +119,11 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
       transferOwnership(timelock_);
    }
 
+   /* ========== MODIFIERS ========== */
+
    /**
     * @notice Updates the reward and time on call.
-    * @param _account address
+    * @param account_ address
     */
    modifier updateReward(address account_) {
       rewardPerTokenStored = rewardPerToken();
@@ -131,15 +136,11 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
       _;
    }
 
-   /// @notice Removes all stake and transfers all rewards to the staker.
-   function exit(address delegator_) external {
-      unDelegate(delegator_, uint256(_balances[msg.sender]));
-      getReward();
-   }
+   /* ========== MUTATIVE FUNCTIONS ========== */
 
    /**
     * @notice Notifies the contract that reward has been added to be given.
-    * @param _reward uint
+    * @param reward_ uint
     * @dev Only owner  can call it
     * @dev Increases duration of rewards
     */
@@ -163,7 +164,7 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
       uint256 balance = IGovernanceToken(rewardsToken).balanceOf(address(this));
       require(
          rewardRate <= balance.div(rewardsDuration),
-         "LiquidityReward::notifyRewardAmount: Provided reward too high"
+         "Provided reward too high"
       );
 
       lastUpdateTime = block.timestamp;
@@ -173,17 +174,32 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
 
    /**
     * @notice  Updates the reward duration
-    * @param _rewardsDuration uint
-    * @dev Only owner  can call it
+    * @param rewardsDuration_ uint
+    * @dev Only owner can call it
     * @dev Previous rewards must be complete
     */
    function setRewardsDuration(uint256 rewardsDuration_) external onlyOwner {
       require(
          block.timestamp > periodFinish,
-         "LiquidityReward::setRewardsDuration: Previous rewards period must be complete before changing the duration for the new period"
+         "Previous rewards period must be complete before changing the duration for the new period"
       );
       rewardsDuration = rewardsDuration_;
       emit RewardsDurationUpdated(rewardsDuration);
+   }
+
+   /**
+    * @notice Transfers to the caller the current amount of rewards tokens earned.
+    * @dev updates rewards on call
+    * @dev from the total reward a vestingRatio amount is locked into vesting and the rest is transferred
+    * @dev if vesting period has passed transfer all rewards
+    */
+   function getReward() external nonReentrant updateReward(msg.sender) {
+      uint256 reward = rewards[msg.sender];
+      if (reward > 0) {
+         rewards[msg.sender] = 0;
+         IGovernanceToken(rewardsToken).transfer(msg.sender, reward);
+         emit RewardPaid(msg.sender, reward);
+      }
    }
 
    /**
@@ -212,7 +228,7 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
     * @dev amount_ is transferred to the delegator contract and staker starts earning rewards if active
     * @dev updates rewards on call
     */
-   function delegate(address delegator_, uint256 amount_)
+   function stake(address delegator_, uint256 amount_)
       external
       nonReentrant
       updateReward(msg.sender)
@@ -229,7 +245,7 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
          delegator_,
          amount_
       );
-      emit Delegated(delegator_, msg.sender, amount_);
+      emit Staked(delegator_, msg.sender, amount_);
    }
 
    /**
@@ -242,7 +258,7 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
     * @dev updates rewards on call
     * @dev requires that at least waitTime has passed since delegation to unDelegate
     */
-   function unDelegate(address delegator_, uint256 amount_)
+   function withdraw(address delegator_, uint256 amount_)
       external
       nonReentrant
       updateReward(msg.sender)
@@ -257,7 +273,7 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
       _balances[msg.sender] = _balances[msg.sender].sub(amount_);
       Delegator d = Delegator(delegator_);
       d.removeStake(msg.sender, amount_);
-      emit Undelegated(delegator_, msg.sender, amount_);
+      emit Withdrawn(delegator_, msg.sender, amount_);
    }
 
    /**
@@ -270,53 +286,24 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
       emit WaitTimeUpdated(waitTime_);
    }
 
+   /* ========== VIEWS ========== */
+
    /// @notice Returns the total amount of staked tokens.
    function totalSupply() external view returns (uint256) {
       return _totalSupply;
    }
 
    /**
-    * @notice Returns the amount of staked tokens from specific user.
-    * @param _account address
+    * @notice Returns the amount of staked tokens from specific user
+    * @param account_ address
     */
    function balanceOf(address account_) external view returns (uint256) {
       return _balances[account_];
    }
 
+   /// @notice Returns reward rate for a duration
    function getRewardForDuration() external view returns (uint256) {
       return rewardRate.mul(rewardsDuration);
-   }
-
-   /**
-    * @notice Remove staking token and transfer back to staker
-    * @param _amount uint
-    * @dev updates rewards on call
-    */
-   function withdraw(uint256 amount_)
-      public
-      nonReentrant
-      updateReward(msg.sender)
-   {
-      require(amount_ > 0, "LiquidityReward::withdraw: Cannot withdraw 0");
-      _totalSupply = _totalSupply.sub(amount_);
-      _balances[msg.sender] = _balances[msg.sender].sub(amount_);
-      IGovernanceToken(stakingToken).transfer(msg.sender, amount_);
-      //      emit Withdrawn(msg.sender, _amount);
-   }
-
-   /**
-    * @notice Transfers to the caller the current amount of rewards tokens earned.
-    * @dev updates rewards on call
-    * @dev from the total reward a vestingRatio amount is locked into vesting and the rest is transfered
-    * @dev if vesting period has passed transfer all rewards
-    */
-   function getReward() public nonReentrant updateReward(msg.sender) {
-      uint256 reward = rewards[msg.sender];
-      if (reward > 0) {
-         rewards[msg.sender] = 0;
-         IGovernanceToken(rewardsToken).transfer(msg.sender, reward);
-         emit RewardPaid(msg.sender, reward);
-      }
    }
 
    /// @notice Returns the minimum between current block timestamp or the finish period of rewards.
@@ -342,7 +329,7 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
 
    /**
     * @notice Returns the amount of reward tokens a user has earned.
-    * @param _account address
+    * @param account_ address
     */
    function earned(address account_) public view returns (uint256) {
       return
@@ -354,8 +341,8 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
 
    /**
     * @notice Returns the minimum between two variables
-    * @param _a uint
-    * @param _b uint
+    * @param a_ uint
+    * @param b_ uint
     */
    function min(uint256 a_, uint256 b_) public pure returns (uint256) {
       return a_ < b_ ? a_ : b_;
