@@ -24,3 +24,7 @@ or
 ```shell
 dapp test --verbosity 1
 ```
+
+### Discussions
+
+If you want to discuss this repo you can join [Cryptex Discord](https://discord.gg/2uMwMKJRaq).
