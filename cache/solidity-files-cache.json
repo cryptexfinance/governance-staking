@@ -1,0 +1,534 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "/home/crisgarner/Projects/cryptex/governance-staking/src/Delegator.sol": {
+      "lastModificationDate": 1631033235642,
+      "contentHash": "a4132b7b6cafca13015e2cca1e3bf763",
+      "sourceName": "src/Delegator.sol",
+      "solcConfig": {
+        "version": "0.8.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 999999
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "./interfaces/IGovernanceToken.sol",
+        "../lib/openzeppelin-contracts/contracts/access/Ownable.sol"
+      ],
+      "versionPragmas": [
+        "0.8.6"
+      ],
+      "artifacts": [
+        "Delegator"
+      ]
+    },
+    "/home/crisgarner/Projects/cryptex/governance-staking/src/interfaces/IGovernanceToken.sol": {
+      "lastModificationDate": 1629858095302,
+      "contentHash": "a073efee40efbbb94e20005cc182f14c",
+      "sourceName": "src/interfaces/IGovernanceToken.sol",
+      "solcConfig": {
+        "version": "0.8.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 999999
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.8.6"
+      ],
+      "artifacts": [
+        "IGovernanceToken"
+      ]
+    },
+    "/home/crisgarner/Projects/cryptex/governance-staking/lib/openzeppelin-contracts/contracts/access/Ownable.sol": {
+      "lastModificationDate": 1628545976787,
+      "contentHash": "4fe56b59ced59d87df6b796758f62895",
+      "sourceName": "lib/openzeppelin-contracts/contracts/access/Ownable.sol",
+      "solcConfig": {
+        "version": "0.8.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 999999
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "../utils/Context.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "Ownable"
+      ]
+    },
+    "/home/crisgarner/Projects/cryptex/governance-staking/lib/openzeppelin-contracts/contracts/utils/Context.sol": {
+      "lastModificationDate": 1628545976791,
+      "contentHash": "851485d5b925529b1a2f34a0be077891",
+      "sourceName": "lib/openzeppelin-contracts/contracts/utils/Context.sol",
+      "solcConfig": {
+        "version": "0.8.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 999999
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "Context"
+      ]
+    },
+    "/home/crisgarner/Projects/cryptex/governance-staking/src/tests/DelegatorFactory.t.sol": {
+      "lastModificationDate": 1631034530094,
+      "contentHash": "84cbe61e38189cfdd4f048de4d23db0d",
+      "sourceName": "src/tests/DelegatorFactory.t.sol",
+      "solcConfig": {
+        "version": "0.8.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 999999
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "../../lib/ds-test/src/test.sol",
+        "../Delegator.sol",
+        "../DelegatorFactory.sol",
+        "../mocks/GovernanceToken.sol"
+      ],
+      "versionPragmas": [
+        "0.8.6"
+      ],
+      "artifacts": [
+        "DelegatorFactoryTest",
+        "FakeDelegator",
+        "User"
+      ]
+    },
+    "/home/crisgarner/Projects/cryptex/governance-staking/lib/ds-test/src/test.sol": {
+      "lastModificationDate": 1629764098495,
+      "contentHash": "d7d808e93d951af9269882bd73348c95",
+      "sourceName": "lib/ds-test/src/test.sol",
+      "solcConfig": {
+        "version": "0.8.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 999999
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "./hevm.sol"
+      ],
+      "versionPragmas": [
+        ">=0.4.23"
+      ],
+      "artifacts": [
+        "DSTest"
+      ]
+    },
+    "/home/crisgarner/Projects/cryptex/governance-staking/src/DelegatorFactory.sol": {
+      "lastModificationDate": 1631033354456,
+      "contentHash": "ea5ca319412e332f553381801e371ab2",
+      "sourceName": "src/DelegatorFactory.sol",
+      "solcConfig": {
+        "version": "0.8.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 999999
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "./interfaces/IGovernanceToken.sol",
+        "./Delegator.sol",
+        "../lib/openzeppelin-contracts/contracts/access/Ownable.sol",
+        "../lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol",
+        "../lib/openzeppelin-contracts/contracts/utils/math/SafeMath.sol"
+      ],
+      "versionPragmas": [
+        "0.8.6"
+      ],
+      "artifacts": [
+        "DelegatorFactory"
+      ]
+    },
+    "/home/crisgarner/Projects/cryptex/governance-staking/src/mocks/GovernanceToken.sol": {
+      "lastModificationDate": 1628625843393,
+      "contentHash": "5709802c48bf2bad0228cc1b83baf472",
+      "sourceName": "src/mocks/GovernanceToken.sol",
+      "solcConfig": {
+        "version": "0.8.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 999999
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.8.6"
+      ],
+      "artifacts": [
+        "GovernanceToken"
+      ]
+    },
+    "/home/crisgarner/Projects/cryptex/governance-staking/lib/ds-test/src/hevm.sol": {
+      "lastModificationDate": 1629823213436,
+      "contentHash": "9a05b8a2982831f78aa5567a8c13b366",
+      "sourceName": "lib/ds-test/src/hevm.sol",
+      "solcConfig": {
+        "version": "0.8.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 999999
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.4.23"
+      ],
+      "artifacts": [
+        "Hevm"
+      ]
+    },
+    "/home/crisgarner/Projects/cryptex/governance-staking/lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol": {
+      "lastModificationDate": 1628545976791,
+      "contentHash": "53fbff678f378956efcb207fa748eaa6",
+      "sourceName": "lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol",
+      "solcConfig": {
+        "version": "0.8.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 999999
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "ReentrancyGuard"
+      ]
+    },
+    "/home/crisgarner/Projects/cryptex/governance-staking/lib/openzeppelin-contracts/contracts/utils/math/SafeMath.sol": {
+      "lastModificationDate": 1628545976791,
+      "contentHash": "5365090efc586b728719e562ebfed0d6",
+      "sourceName": "lib/openzeppelin-contracts/contracts/utils/math/SafeMath.sol",
+      "solcConfig": {
+        "version": "0.8.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 999999
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "SafeMath"
+      ]
+    },
+    "/home/crisgarner/Projects/cryptex/governance-staking/src/tests/Delegator.t.sol": {
+      "lastModificationDate": 1631034523106,
+      "contentHash": "7aac267932a060ab0b6dcc9f0fde4751",
+      "sourceName": "src/tests/Delegator.t.sol",
+      "solcConfig": {
+        "version": "0.8.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 999999
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc",
+                "storageLayout",
+                "evm.gasEstimates"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          },
+          "metadata": {
+            "useLiteralContent": true
+          }
+        }
+      },
+      "imports": [
+        "../../lib/ds-test/src/test.sol",
+        "../Delegator.sol",
+        "../mocks/GovernanceToken.sol"
+      ],
+      "versionPragmas": [
+        "0.8.6"
+      ],
+      "artifacts": [
+        "DelegatorTest",
+        "User"
+      ]
+    }
+  }
+}

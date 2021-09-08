@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-import "@openzeppelin/access/Ownable.sol";
-import "@openzeppelin/security/ReentrancyGuard.sol";
-import "@openzeppelin/utils/math/SafeMath.sol";
 import "./interfaces/IGovernanceToken.sol";
 import "./Delegator.sol";
-import "ds-test/test.sol";
+import "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
+import "../lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
+import "../lib/openzeppelin-contracts/contracts/utils/math/SafeMath.sol";
 
 /**
  * @title Delegator Contract Factory
@@ -14,7 +13,7 @@ import "ds-test/test.sol";
  * @notice Contract in charge of generating Delegator contracts, handling delegations and CTX balance map, rewards.
  */
 
-contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
+contract DelegatorFactory is Ownable, ReentrancyGuard {
    /// @notice Using open zeppelin libraries
    using SafeMath for uint256;
 
