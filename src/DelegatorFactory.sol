@@ -34,7 +34,7 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
    uint256 public rewardRate = 0;
 
    /// @notice How long the rewards lasts, it updates when more rewards are added
-   uint256 public rewardsDuration = 186 days; //TODO: update to real value
+   uint256 public rewardsDuration = 186 days;
 
    /// @notice Last time rewards were updated
    uint256 public lastUpdateTime;
@@ -190,8 +190,6 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
    /**
     * @notice Transfers to the caller the current amount of rewards tokens earned.
     * @dev updates rewards on call
-    * @dev from the total reward a vestingRatio amount is locked into vesting and the rest is transferred
-    * @dev if vesting period has passed transfer all rewards
     */
    function getReward() external nonReentrant updateReward(msg.sender) {
       uint256 reward = rewards[msg.sender];
