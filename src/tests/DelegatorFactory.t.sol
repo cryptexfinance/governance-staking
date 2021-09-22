@@ -401,6 +401,12 @@ contract DelegatorFactoryTest is DSTest {
    function test_earnRewards() public {
       uint256 amount = 1 ether;
       address delegatee = address(0x1);
+      uint256 lastUpdateTime = delegatorFactory.lastUpdateTime();
+      assertEq(lastUpdateTime, 0);
+
+      uint256 lastRewardPerTokenStored = delegatorFactory
+         .rewardPerTokenStored();
+      assertEq(lastRewardPerTokenStored, 0);
 
       // create delegator
       delegatorFactory.createDelegator(delegatee);
@@ -420,14 +426,25 @@ contract DelegatorFactoryTest is DSTest {
       // check if rewards increase
       uint256 prevReward = delegatorFactory.earned(address(user1));
       assertEq(prevReward, 0);
+
       hevm.warp(1 weeks);
       uint256 newReward = delegatorFactory.earned(address(user1));
       assertTrue(newReward > prevReward);
       prevReward = newReward;
+      uint256 updateTime = delegatorFactory.lastUpdateTime();
+      assert(updateTime > lastUpdateTime);
+      assertEq(updateTime, block.timestamp);
+
       hevm.warp(2 weeks);
       newReward = delegatorFactory.earned(address(user1));
       assertTrue(newReward > prevReward);
       prevReward = newReward;
+      uint256 prevBal = ctx.balanceOf(address(user1));
+      user1.doClaimRewards(delegatorFactory);
+      uint256 newBal = ctx.balanceOf(address(user1));
+      assertTrue(newBal > prevBal);
+      uint256 rewardPerTokenStored = delegatorFactory.rewardPerTokenStored();
+      assert(rewardPerTokenStored > lastRewardPerTokenStored);
 
       // warp to end
       hevm.warp(delegatorFactory.rewardsDuration());
@@ -435,9 +452,9 @@ contract DelegatorFactoryTest is DSTest {
       assertTrue(newReward > prevReward);
 
       // claim rewards
-      uint256 prevBal = ctx.balanceOf(address(user1));
+      prevBal = ctx.balanceOf(address(user1));
       user1.doClaimRewards(delegatorFactory);
-      uint256 newBal = ctx.balanceOf(address(user1));
+      newBal = ctx.balanceOf(address(user1));
       assertTrue(newBal > prevBal);
    }
 }

@@ -7,13 +7,15 @@ import "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 import "../lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import "../lib/openzeppelin-contracts/contracts/utils/math/SafeMath.sol";
 
+import "../lib/ds-test/src/test.sol"; // TODO: remove
+
 /**
  * @title Delegator Contract Factory
  * @author Cryptex.Finance
  * @notice Contract in charge of generating Delegator contracts, handling delegations and CTX balance map, rewards.
  */
 
-contract DelegatorFactory is Ownable, ReentrancyGuard {
+contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
    /// @notice Using open zeppelin libraries
    using SafeMath for uint256;
 
