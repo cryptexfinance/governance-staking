@@ -55,7 +55,7 @@ contract Delegator is Ownable {
     */
    function removeStake(address staker_, uint256 amount_) external onlyOwner {
       stakerBalance[staker_] -= amount_;
-      IGovernanceToken(token).transfer(staker_, amount_);
+      require(IGovernanceToken(token).transfer(staker_, amount_), "");
    }
 
    /* ========== VIEWS ========== */
