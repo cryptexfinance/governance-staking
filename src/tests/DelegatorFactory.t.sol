@@ -1,12 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-<<<<<<< HEAD
 import "../../lib/ds-test/src/test.sol";
-=======
-import "ds-test/test.sol";
 import "./hevm.sol";
->>>>>>> main
 
 import "../Delegator.sol";
 import "../DelegatorFactory.sol";
