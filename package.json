@@ -7,23 +7,31 @@
 	"license": "MIT",
 	"private": false,
 	"scripts": {
-		"build": "npm run typechain",
+		"build": "npx hardhat compile",
 		"test": "./test.sh",
-		"compile": "npx hardhat compile",
-		"coverage": "npx hardhat coverage",
+		"compile": "jq '.contracts.\"src/DelegatorFactory.sol\".DelegatorFactory.abi' out/dapp.sol.json",
+		"coverage": "./coverage.sh",
 		"typechain": "npx hardhat compile && typechain --outDir typechain --target ethers 'artifacts/*.json'",
 		"deploy": "npx hardhat deploy",
 		"verify": "npx hardhat sourcify",
 		"docgen": "yarn run solidity-docgen --solc-module solc-0.7"
 	},
 	"dependencies": {
+		"@nomiclabs/hardhat-ethers": "^2.0.2",
+		"@nomiclabs/hardhat-waffle": "^2.0.1",
+		"@types/chai": "^4.2.21",
+		"@types/mocha": "^9.0.0",
+		"@types/node": "^16.7.11",
+		"chai": "^4.3.4",
 		"dotenv": "^10.0.0",
-		"ethers": "^5.4.4",
-		"hardhat": "^2.6.0",
-		"hardhat-deploy": "^0.8.11",
+		"ethereum-waffle": "^3.4.0",
+		"ethers": "^5.4.6",
+		"hardhat": "^2.6.2",
+		"hardhat-deploy": "^0.9.1",
 		"prettier": "^2.3.2",
 		"prettier-plugin-solidity": "^1.0.0-beta.17",
 		"pretty-quick": "^3.1.1",
-		"typescript": "^4.3.5"
+		"ts-node": "^10.2.1",
+		"typescript": "^4.4.2"
 	}
 }

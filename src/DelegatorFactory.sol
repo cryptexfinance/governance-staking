@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-import "@openzeppelin/access/Ownable.sol";
-import "@openzeppelin/security/ReentrancyGuard.sol";
-import "@openzeppelin/utils/math/SafeMath.sol";
 import "./interfaces/IGovernanceToken.sol";
 import "./Delegator.sol";
-import "ds-test/test.sol";
+import "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
+import "../lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title Delegator Contract Factory
@@ -14,10 +12,7 @@ import "ds-test/test.sol";
  * @notice Contract in charge of generating Delegator contracts, handling delegations and CTX balance map, rewards.
  */
 
-contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
-   /// @notice Using open zeppelin libraries
-   using SafeMath for uint256;
-
+contract DelegatorFactory is Ownable, ReentrancyGuard {
    /* ========== STATE VARIABLES ========== */
 
    /// @notice Address of the staking governance token
@@ -119,13 +114,13 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
       transferOwnership(timelock_);
    }
 
-   /* ========== MODIFIERS ========== */
+   /* ========== MUTATIVE FUNCTIONS ========== */
 
    /**
     * @notice Updates the reward and time on call.
     * @param account_ address
     */
-   modifier updateReward(address account_) {
+   function updateReward(address account_) private {
       rewardPerTokenStored = rewardPerToken();
       lastUpdateTime = lastTimeRewardApplicable();
 
@@ -133,10 +128,7 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
          rewards[account_] = earned(account_);
          userRewardPerTokenPaid[account_] = rewardPerTokenStored;
       }
-      _;
    }
-
-   /* ========== MUTATIVE FUNCTIONS ========== */
 
    /**
     * @notice Notifies the contract that reward has been added to be given.
@@ -144,18 +136,18 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
     * @dev Only owner  can call it
     * @dev Increases duration of rewards
     */
-   function notifyRewardAmount(uint256 reward_)
-      external
-      onlyOwner
-      updateReward(address(0))
-   {
+   function notifyRewardAmount(uint256 reward_) external onlyOwner {
+      updateReward(address(0));
       if (block.timestamp >= periodFinish) {
-         rewardRate = reward_.div(rewardsDuration);
+         rewardRate = reward_ / rewardsDuration;
       } else {
-         uint256 remaining = periodFinish.sub(block.timestamp);
-         uint256 leftover = remaining.mul(rewardRate);
-         rewardRate = reward_.add(leftover).div(rewardsDuration);
+         uint256 remaining = periodFinish - block.timestamp;
+         uint256 leftover = remaining * rewardRate;
+         rewardRate = (reward_ + leftover) / rewardsDuration;
       }
+
+      lastUpdateTime = block.timestamp;
+      periodFinish = block.timestamp + rewardsDuration;
 
       // Ensure the provided reward amount is not more than the balance in the contract.
       // This keeps the reward rate in the right range, preventing overflows due to
@@ -163,12 +155,9 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
       // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
       uint256 balance = IGovernanceToken(rewardsToken).balanceOf(address(this));
       require(
-         rewardRate <= balance.div(rewardsDuration),
+         rewardRate <= balance / rewardsDuration,
          "Provided reward too high"
       );
-
-      lastUpdateTime = block.timestamp;
-      periodFinish = block.timestamp.add(rewardsDuration);
       emit RewardAdded(reward_);
    }
 
@@ -191,11 +180,15 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
     * @notice Transfers to the caller the current amount of rewards tokens earned.
     * @dev updates rewards on call
     */
-   function getReward() external nonReentrant updateReward(msg.sender) {
+   function getReward() external nonReentrant {
+      updateReward(msg.sender);
       uint256 reward = rewards[msg.sender];
       if (reward > 0) {
          rewards[msg.sender] = 0;
-         IGovernanceToken(rewardsToken).transfer(msg.sender, reward);
+         require(
+            IGovernanceToken(rewardsToken).transfer(msg.sender, reward),
+            "Transfer Failed"
+         );
          emit RewardPaid(msg.sender, reward);
       }
    }
@@ -226,22 +219,22 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
     * @dev amount_ is transferred to the delegator contract and staker starts earning rewards if active
     * @dev updates rewards on call
     */
-   function stake(address delegator_, uint256 amount_)
-      external
-      nonReentrant
-      updateReward(msg.sender)
-   {
+   function stake(address delegator_, uint256 amount_) external nonReentrant {
       require(delegators[delegator_], "Not a valid delegator");
       require(amount_ > 0, "Amount must be greater than 0");
-      _totalSupply = _totalSupply.add(amount_);
-      _balances[msg.sender] = _balances[msg.sender].add(amount_);
+      updateReward(msg.sender);
+      _totalSupply = _totalSupply + amount_;
+      _balances[msg.sender] = _balances[msg.sender] + amount_;
       Delegator d = Delegator(delegator_);
       d.stake(msg.sender, amount_);
       stakerWaitTime[msg.sender][delegator_] = block.timestamp + waitTime;
-      IGovernanceToken(stakingToken).transferFrom(
-         msg.sender,
-         delegator_,
-         amount_
+      require(
+         IGovernanceToken(stakingToken).transferFrom(
+            msg.sender,
+            delegator_,
+            amount_
+         ),
+         "Transfer Failed"
       );
       emit Staked(delegator_, msg.sender, amount_);
    }
@@ -259,7 +252,6 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
    function withdraw(address delegator_, uint256 amount_)
       external
       nonReentrant
-      updateReward(msg.sender)
    {
       require(delegators[delegator_], "Not a valid delegator");
       require(amount_ > 0, "Amount must be greater than 0");
@@ -267,8 +259,9 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
          block.timestamp >= stakerWaitTime[msg.sender][delegator_],
          "Need to wait the minimum staking period"
       );
-      _totalSupply = _totalSupply.sub(amount_);
-      _balances[msg.sender] = _balances[msg.sender].sub(amount_);
+      updateReward(msg.sender);
+      _totalSupply = _totalSupply - amount_;
+      _balances[msg.sender] = _balances[msg.sender] - amount_;
       Delegator d = Delegator(delegator_);
       d.removeStake(msg.sender, amount_);
       emit Withdrawn(delegator_, msg.sender, amount_);
@@ -301,7 +294,7 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
 
    /// @notice Returns reward rate for a duration
    function getRewardForDuration() external view returns (uint256) {
-      return rewardRate.mul(rewardsDuration);
+      return rewardRate * rewardsDuration;
    }
 
    /// @notice Returns the minimum between current block timestamp or the finish period of rewards.
@@ -316,13 +309,9 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
       }
 
       return
-         rewardPerTokenStored.add(
-            lastTimeRewardApplicable()
-               .sub(lastUpdateTime)
-               .mul(rewardRate)
-               .mul(1e18)
-               .div(_totalSupply)
-         );
+         rewardPerTokenStored +
+         ((lastTimeRewardApplicable() - lastUpdateTime) * rewardRate * 1e18) /
+         _totalSupply;
    }
 
    /**
@@ -331,10 +320,10 @@ contract DelegatorFactory is Ownable, ReentrancyGuard, DSTest {
     */
    function earned(address account_) public view returns (uint256) {
       return
-         _balances[account_]
-            .mul(rewardPerToken().sub(userRewardPerTokenPaid[account_]))
-            .div(1e18)
-            .add(rewards[account_]);
+         (_balances[account_] *
+            (rewardPerToken() - userRewardPerTokenPaid[account_])) /
+         1e18 +
+         rewards[account_];
    }
 
    /**

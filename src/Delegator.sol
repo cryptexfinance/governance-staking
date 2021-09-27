@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-import "@openzeppelin/access/Ownable.sol";
 import "./interfaces/IGovernanceToken.sol";
-import "ds-test/test.sol";
+import "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 
 /**
  * @title Delegator Contract
@@ -11,7 +10,7 @@ import "ds-test/test.sol";
  * @notice Contract in charge of handling delegations.
  */
 
-contract Delegator is Ownable, DSTest {
+contract Delegator is Ownable {
    /* ========== STATE VARIABLES ========== */
 
    /// @notice Address of the staking governance token
@@ -56,7 +55,10 @@ contract Delegator is Ownable, DSTest {
     */
    function removeStake(address staker_, uint256 amount_) external onlyOwner {
       stakerBalance[staker_] -= amount_;
-      IGovernanceToken(token).transfer(staker_, amount_);
+      require(
+         IGovernanceToken(token).transfer(staker_, amount_),
+         "Transfer failed"
+      );
    }
 
    /* ========== VIEWS ========== */
