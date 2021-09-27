@@ -10,7 +10,7 @@
 		"build": "npx hardhat compile",
 		"test": "./test.sh",
 		"compile": "jq '.contracts.\"src/DelegatorFactory.sol\".DelegatorFactory.abi' out/dapp.sol.json",
-		"coverage": "npx hardhat coverage",
+		"coverage": "./coverage.sh",
 		"typechain": "npx hardhat compile && typechain --outDir typechain --target ethers 'artifacts/*.json'",
 		"deploy": "npx hardhat deploy",
 		"verify": "npx hardhat sourcify",

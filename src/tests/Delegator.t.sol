@@ -50,7 +50,22 @@ contract DelegatorTest is DSTest {
       user1.doStake(delegator, amount);
    }
 
-   function test_removeStake(address staker, uint256 amount) public {
+   function test_removeStake() public {
+      address staker = address(0x1);
+      uint256 amount = 1 ether;
+      ctx.transfer(address(delegator), amount); //simulate transfer from owner
+      delegator.stake(staker, amount);
+      assertEq(ctx.getCurrentVotes(delegatee), amount);
+      assertEq(delegator.stakerBalance((staker)), amount);
+      assertEq(ctx.balanceOf(address(delegator)), amount);
+      delegator.removeStake(staker, amount);
+      assertEq(ctx.getCurrentVotes(delegatee), 0);
+      assertEq(delegator.stakerBalance((staker)), 0);
+      assertEq(ctx.balanceOf(address(delegator)), 0);
+      assertEq(ctx.balanceOf(staker), amount);
+   }
+
+   function test_removeStakeFuzz(address staker, uint256 amount) public {
       if (amount >= ctx.totalSupply()) return;
       if (staker == address(0)) return;
       ctx.transfer(address(delegator), amount); //simulate transfer from owner
