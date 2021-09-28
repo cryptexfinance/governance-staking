@@ -29,6 +29,10 @@ contract Delegator is Ownable {
     * @dev sets delegator factory as owner
     */
    constructor(address delegatee_, address token_) {
+      require(
+         delegatee_ != address(0) && token_ != address(0),
+         "Address can't be 0"
+      );
       token = token_;
       IGovernanceToken(token_).delegate(delegatee_);
    }

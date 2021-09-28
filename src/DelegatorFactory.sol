@@ -108,6 +108,12 @@ contract DelegatorFactory is Ownable, ReentrancyGuard {
       uint256 waitTime_,
       address timelock_
    ) {
+      require(
+         stakingToken_ != address(0) &&
+            rewardsToken_ != address(0) &&
+            timelock_ != address(0),
+         "Address can't be 0"
+      );
       stakingToken = stakingToken_;
       rewardsToken = rewardsToken_;
       waitTime = waitTime_;
