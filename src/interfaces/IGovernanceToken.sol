@@ -15,4 +15,6 @@ interface IGovernanceToken {
    ) external returns (bool);
 
    function balanceOf(address src) external returns (uint256);
+
+   function decimals() external returns (uint8);
 }

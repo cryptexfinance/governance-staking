@@ -114,6 +114,11 @@ contract DelegatorFactory is Ownable, ReentrancyGuard {
             timelock_ != address(0),
          "Address can't be 0"
       );
+      require(
+         IGovernanceToken(stakingToken_).decimals() == 18 &&
+            IGovernanceToken(rewardsToken_).decimals() == 18,
+         "Decimals must be 18"
+      );
       stakingToken = stakingToken_;
       rewardsToken = rewardsToken_;
       waitTime = waitTime_;
