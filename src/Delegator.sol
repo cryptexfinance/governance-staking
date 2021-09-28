@@ -33,6 +33,7 @@ contract Delegator is Ownable {
          delegatee_ != address(0) && token_ != address(0),
          "Address can't be 0"
       );
+      require(IGovernanceToken(token_).decimals() == 18, "Decimals must be 18");
       token = token_;
       IGovernanceToken(token_).delegate(delegatee_);
    }

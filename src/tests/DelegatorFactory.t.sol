@@ -64,6 +64,12 @@ contract FakeDelegator {
    }
 }
 
+contract FakeToken {
+   function decimals() public returns (uint8) {
+      return 10;
+   }
+}
+
 contract DelegatorFactoryTest is DSTest {
    DelegatorFactory delegatorFactory;
    GovernanceToken ctx;
@@ -103,6 +109,26 @@ contract DelegatorFactoryTest is DSTest {
       DelegatorFactory d = new DelegatorFactory(
          address(ctx),
          address(0x0),
+         waitTime,
+         address(this)
+      );
+   }
+
+   function testFail_invalidStakingTokenDecimals() public {
+      FakeToken f = new FakeToken();
+      DelegatorFactory d = new DelegatorFactory(
+         address(f),
+         address(ctx),
+         waitTime,
+         address(this)
+      );
+   }
+
+   function testFail_invalidRewardTokenDecimals() public {
+      FakeToken f = new FakeToken();
+      DelegatorFactory d = new DelegatorFactory(
+         address(ctx),
+         address(f),
          waitTime,
          address(this)
       );
