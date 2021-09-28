@@ -35,6 +35,14 @@ contract DelegatorTest is DSTest {
       assertEq(ctx.delegates(address(delegator)), delegatee);
    }
 
+   function testFail_invalidDelegatee() public {
+      Delegator d = new Delegator(address(0x0), address(ctx));
+   }
+
+   function testFail_invalidToken() public {
+      Delegator d = new Delegator(delegatee, address(0x0));
+   }
+
    function test_stake(address staker, uint256 amount) public {
       if (amount >= ctx.totalSupply()) return;
       if (staker == address(0)) return;

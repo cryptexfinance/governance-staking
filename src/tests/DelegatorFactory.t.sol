@@ -90,6 +90,33 @@ contract DelegatorFactoryTest is DSTest {
       assertEq(delegatorFactory.rewardsDuration(), 186 days);
    }
 
+   function testFail_invalidStakingToken() public {
+      DelegatorFactory d = new DelegatorFactory(
+         address(0x0),
+         address(ctx),
+         waitTime,
+         address(this)
+      );
+   }
+
+   function testFail_invalidRewardToken() public {
+      DelegatorFactory d = new DelegatorFactory(
+         address(ctx),
+         address(0x0),
+         waitTime,
+         address(this)
+      );
+   }
+
+   function testFail_invalidTimelock() public {
+      DelegatorFactory d = new DelegatorFactory(
+         address(ctx),
+         address(ctx),
+         waitTime,
+         address(0x0)
+      );
+   }
+
    function test_createDelegator(address delegatee) public {
       if (delegatee == address(0)) return;
       delegatorFactory.createDelegator(delegatee);
