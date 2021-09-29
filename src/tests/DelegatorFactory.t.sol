@@ -336,6 +336,28 @@ contract DelegatorFactoryTest is DSTest {
       assertEq(0, delegatorFactory.totalSupply());
    }
 
+   function test_unDelegateWithWait() public {
+      address delegatee = address(0x1);
+      uint256 amount = 1 ether;
+      // create delegator
+      delegatorFactory.createDelegator(delegatee);
+      address delegator = delegatorFactory.delegateeToDelegator(delegatee);
+
+      // Delegate
+      ctx.approve(address(delegatorFactory), amount);
+      delegatorFactory.stake(delegator, amount);
+
+      //wait 1 week
+      hevm.warp(waitTime + 1);
+
+      // Delegate
+      ctx.approve(address(delegatorFactory), amount);
+      delegatorFactory.stake(delegator, amount);
+
+      // Remove Delegate
+      delegatorFactory.withdraw(delegator, (amount));
+   }
+
    function testFail_unDelegateNoWait(address delegatee, uint256 amount)
       public
    {
