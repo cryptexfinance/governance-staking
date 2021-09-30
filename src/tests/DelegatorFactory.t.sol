@@ -65,7 +65,7 @@ contract FakeDelegator {
 }
 
 contract FakeToken {
-   function decimals() public returns (uint8) {
+   function decimals() public pure returns (uint8) {
       return 10;
    }
 }
@@ -97,50 +97,25 @@ contract DelegatorFactoryTest is DSTest {
    }
 
    function testFail_invalidStakingToken() public {
-      DelegatorFactory d = new DelegatorFactory(
-         address(0x0),
-         address(ctx),
-         waitTime,
-         address(this)
-      );
+      new DelegatorFactory(address(0x0), address(ctx), waitTime, address(this));
    }
 
    function testFail_invalidRewardToken() public {
-      DelegatorFactory d = new DelegatorFactory(
-         address(ctx),
-         address(0x0),
-         waitTime,
-         address(this)
-      );
+      new DelegatorFactory(address(ctx), address(0x0), waitTime, address(this));
    }
 
    function testFail_invalidStakingTokenDecimals() public {
       FakeToken f = new FakeToken();
-      DelegatorFactory d = new DelegatorFactory(
-         address(f),
-         address(ctx),
-         waitTime,
-         address(this)
-      );
+      new DelegatorFactory(address(f), address(ctx), waitTime, address(this));
    }
 
    function testFail_invalidRewardTokenDecimals() public {
       FakeToken f = new FakeToken();
-      DelegatorFactory d = new DelegatorFactory(
-         address(ctx),
-         address(f),
-         waitTime,
-         address(this)
-      );
+      new DelegatorFactory(address(ctx), address(f), waitTime, address(this));
    }
 
    function testFail_invalidTimelock() public {
-      DelegatorFactory d = new DelegatorFactory(
-         address(ctx),
-         address(ctx),
-         waitTime,
-         address(0x0)
-      );
+      new DelegatorFactory(address(ctx), address(ctx), waitTime, address(0x0));
    }
 
    function test_createDelegator(address delegatee) public {
@@ -373,6 +348,86 @@ contract DelegatorFactoryTest is DSTest {
       delegatorFactory.withdraw(delegator, (amount));
    }
 
+   function test_unDelegateWaitMultiple() public {
+      address delegatee = address(0x1);
+      uint256 amount = 1 ether;
+      // create delegator
+      delegatorFactory.createDelegator(delegatee);
+      address delegator = delegatorFactory.delegateeToDelegator(delegatee);
+
+      // Delegate
+      ctx.approve(address(delegatorFactory), amount * 2);
+      delegatorFactory.stake(delegator, amount);
+
+      // Delegate
+      hevm.warp(3 days);
+      delegatorFactory.stake(delegator, amount);
+
+      hevm.warp(waitTime + 1);
+      // Remove Delegate
+      delegatorFactory.withdraw(delegator, (amount));
+   }
+
+   function testFail_unDelegateWaitMultiple() public {
+      address delegatee = address(0x1);
+      uint256 amount = 1 ether;
+      // create delegator
+      delegatorFactory.createDelegator(delegatee);
+      address delegator = delegatorFactory.delegateeToDelegator(delegatee);
+
+      // Delegate
+      ctx.approve(address(delegatorFactory), amount * 2);
+      delegatorFactory.stake(delegator, amount);
+
+      // Delegate
+      hevm.warp(3 days);
+      delegatorFactory.stake(delegator, amount);
+
+      hevm.warp(waitTime + 1);
+      // Remove Delegate
+      delegatorFactory.withdraw(delegator, (amount * 2));
+   }
+
+   function testFail_unDelegateWaitMultipleCalls() public {
+      address delegatee = address(0x1);
+      uint256 amount = 1 ether;
+      // create delegator
+      delegatorFactory.createDelegator(delegatee);
+      address delegator = delegatorFactory.delegateeToDelegator(delegatee);
+
+      // Delegate
+      ctx.approve(address(delegatorFactory), amount * 2);
+      delegatorFactory.stake(delegator, amount);
+
+      // Delegate
+      hevm.warp(3 days);
+      delegatorFactory.stake(delegator, amount);
+
+      hevm.warp(waitTime + 1);
+      // Remove Delegate
+      delegatorFactory.withdraw(delegator, (amount));
+      delegatorFactory.withdraw(delegator, (amount));
+   }
+
+   function testFail_unDelegateNoWaitMultiple() public {
+      address delegatee = address(0x0);
+      uint256 amount = 1 ether;
+      // create delegator
+      delegatorFactory.createDelegator(delegatee);
+      address delegator = delegatorFactory.delegateeToDelegator(delegatee);
+
+      // Delegate
+      ctx.approve(address(delegatorFactory), amount * 2);
+      delegatorFactory.stake(delegator, amount);
+
+      // Delegate
+      hevm.warp(3 days);
+      delegatorFactory.stake(delegator, amount);
+
+      // Remove Delegate
+      delegatorFactory.withdraw(delegator, (amount));
+   }
+
    function test_unDelegateSpecific(
       address delegatee,
       uint256 amount,
@@ -535,7 +590,6 @@ contract DelegatorFactoryTest is DSTest {
 
    function test_setRewardsDuration() public {
       uint256 duration = 1 weeks;
-      uint256 lastRewardsDuration = delegatorFactory.rewardsDuration();
       hevm.warp(delegatorFactory.periodFinish() + 1);
       delegatorFactory.setRewardsDuration(duration);
       uint256 rewardsDuration = delegatorFactory.rewardsDuration();
@@ -543,7 +597,6 @@ contract DelegatorFactoryTest is DSTest {
    }
 
    function test_setRewardsDurationFuzz(uint256 duration) public {
-      uint256 lastRewardsDuration = delegatorFactory.rewardsDuration();
       hevm.warp(delegatorFactory.periodFinish() + 1);
       delegatorFactory.setRewardsDuration(duration);
       uint256 rewardsDuration = delegatorFactory.rewardsDuration();

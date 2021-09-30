@@ -52,8 +52,12 @@ contract DelegatorFactory is Ownable, ReentrancyGuard {
    /// @notice Tracks if address is an official delegator
    mapping(address => bool) public delegators;
 
-   /// @notice Tracks minimum wait time the account has to wait before removing stake
-   mapping(address => mapping(address => uint256)) public stakerWaitTime;
+   struct Stake {
+      uint256 timestamp;
+      uint256 amount;
+   }
+
+   mapping(address => mapping(address => Stake[])) public stakes;
 
    /// @dev Tracks the total supply of staked tokens
    uint256 private _totalSupply;
@@ -238,7 +242,8 @@ contract DelegatorFactory is Ownable, ReentrancyGuard {
       _balances[msg.sender] = _balances[msg.sender] + amount_;
       Delegator d = Delegator(delegator_);
       d.stake(msg.sender, amount_);
-      stakerWaitTime[msg.sender][delegator_] = block.timestamp + waitTime;
+      Stake memory s = Stake(block.timestamp + waitTime, amount_);
+      stakes[msg.sender][delegator_].push(s);
       require(
          IGovernanceToken(stakingToken).transferFrom(
             msg.sender,
@@ -266,10 +271,22 @@ contract DelegatorFactory is Ownable, ReentrancyGuard {
    {
       require(delegators[delegator_], "Not a valid delegator");
       require(amount_ > 0, "Amount must be greater than 0");
-      require(
-         block.timestamp >= stakerWaitTime[msg.sender][delegator_],
-         "Need to wait the minimum staking period"
-      );
+      uint256 maxRemove = 0;
+      if (block.timestamp >= stakerWaitTime(msg.sender, delegator_)) {
+         // Empty array
+         delete stakes[msg.sender][delegator_];
+      } else {
+         for (uint8 i = 0; i < stakes[msg.sender][delegator_].length; i++) {
+            if (
+               block.timestamp >= stakes[msg.sender][delegator_][i].timestamp
+            ) {
+               maxRemove += stakes[msg.sender][delegator_][i].amount;
+               stakes[msg.sender][delegator_][i].amount = 0;
+            }
+         }
+
+         require(amount_ <= maxRemove, "remove amount to much");
+      }
       updateReward(msg.sender);
       _totalSupply = _totalSupply - amount_;
       _balances[msg.sender] = _balances[msg.sender] - amount_;
@@ -335,6 +352,24 @@ contract DelegatorFactory is Ownable, ReentrancyGuard {
             (rewardPerToken() - userRewardPerTokenPaid[account_])) /
          1e18 +
          rewards[account_];
+   }
+
+   /**
+    * @notice Tracks the last wait time the account has to wait before removing all stake
+    * @param account_ address
+    * @param delegator_ address
+    */
+   function stakerWaitTime(address account_, address delegator_)
+      public
+      view
+      returns (uint256)
+   {
+      uint256 arraySize = stakes[account_][delegator_].length;
+      if (arraySize > 0) {
+         return (stakes[account_][delegator_][arraySize - 1].timestamp);
+      } else {
+         return 0;
+      }
    }
 
    /**
