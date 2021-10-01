@@ -17,7 +17,7 @@ contract User {
 }
 
 contract FakeToken {
-   function decimals() public returns (uint8) {
+   function decimals() public pure returns (uint8) {
       return 10;
    }
 }
@@ -42,16 +42,16 @@ contract DelegatorTest is DSTest {
    }
 
    function testFail_invalidDelegatee() public {
-      Delegator d = new Delegator(address(0x0), address(ctx));
+      new Delegator(address(0x0), address(ctx));
    }
 
    function testFail_invalidToken() public {
-      Delegator d = new Delegator(delegatee, address(0x0));
+      new Delegator(delegatee, address(0x0));
    }
 
    function testFail_invalidTokenDecimals() public {
       FakeToken f = new FakeToken();
-      Delegator d = new Delegator(delegatee, address(f));
+      new Delegator(delegatee, address(f));
    }
 
    function test_stake(address staker, uint256 amount) public {
