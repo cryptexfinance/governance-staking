@@ -140,7 +140,7 @@ contract DelegatorFactory is Ownable, ReentrancyGuard {
       lastUpdateTime = lastTimeRewardApplicable();
 
       if (account_ != address(0)) {
-         rewards[account_] = earned(account_);
+         rewards[account_] = currentEarned(account_);
          userRewardPerTokenPaid[account_] = rewardPerTokenStored;
       }
    }
@@ -306,6 +306,18 @@ contract DelegatorFactory is Ownable, ReentrancyGuard {
    }
 
    /* ========== VIEWS ========== */
+
+   /**
+    * @notice Returns the amount of reward tokens a user has earned.
+    * @param account_ address
+    */
+   function currentEarned(address account_) private view returns (uint256) {
+      return
+         (_balances[account_] *
+            (rewardPerTokenStored - userRewardPerTokenPaid[account_])) /
+         1e18 +
+         rewards[account_];
+   }
 
    /// @notice Returns the total amount of staked tokens.
    function totalSupply() external view returns (uint256) {
