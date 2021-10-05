@@ -265,13 +265,6 @@ contract DelegatorFactoryTest is DSTest {
       // Delegate
       ctx.approve(address(delegatorFactory), amount);
       delegatorFactory.stake(delegator, amount);
-      (uint256 stakeTimestamp, uint256 stakeAmount) = delegatorFactory.stakes(
-         address(this),
-         delegator,
-         0
-      );
-      assertEq(stakeTimestamp, block.timestamp + waitTime);
-      assertEq(stakeAmount, amount);
 
       // Time Skip
       hevm.warp(waitTime + 1 seconds);
@@ -286,7 +279,6 @@ contract DelegatorFactoryTest is DSTest {
       assertEq(ctx.getCurrentVotes(delegatee), 0);
       assertEq(0, delegatorFactory.balanceOf(address(this)));
       assertEq(0, delegatorFactory.totalSupply());
-      assertEq(0, delegatorFactory.stakerWaitTime(address(this), delegator));
    }
 
    function test_unDelegateFuzz(address delegatee, uint256 amount) public {
@@ -319,28 +311,6 @@ contract DelegatorFactoryTest is DSTest {
       assertEq(0, delegatorFactory.totalSupply());
    }
 
-   function test_unDelegateWithWait() public {
-      address delegatee = address(0x1);
-      uint256 amount = 1 ether;
-      // create delegator
-      delegatorFactory.createDelegator(delegatee);
-      address delegator = delegatorFactory.delegateeToDelegator(delegatee);
-
-      // Delegate
-      ctx.approve(address(delegatorFactory), amount);
-      delegatorFactory.stake(delegator, amount);
-
-      //wait 1 week
-      hevm.warp(waitTime + 1);
-
-      // Delegate
-      ctx.approve(address(delegatorFactory), amount);
-      delegatorFactory.stake(delegator, amount);
-
-      // Remove Delegate
-      delegatorFactory.withdraw(delegator, (amount));
-   }
-
    function testFail_unDelegateNoWait(address delegatee, uint256 amount)
       public
    {
@@ -350,86 +320,6 @@ contract DelegatorFactoryTest is DSTest {
 
       // Delegate
       ctx.approve(address(delegatorFactory), amount);
-      delegatorFactory.stake(delegator, amount);
-
-      // Remove Delegate
-      delegatorFactory.withdraw(delegator, (amount));
-   }
-
-   function test_unDelegateWaitMultiple() public {
-      address delegatee = address(0x1);
-      uint256 amount = 1 ether;
-      // create delegator
-      delegatorFactory.createDelegator(delegatee);
-      address delegator = delegatorFactory.delegateeToDelegator(delegatee);
-
-      // Delegate
-      ctx.approve(address(delegatorFactory), amount * 2);
-      delegatorFactory.stake(delegator, amount);
-
-      // Delegate
-      hevm.warp(3 days);
-      delegatorFactory.stake(delegator, amount);
-
-      hevm.warp(waitTime + 1);
-      // Remove Delegate
-      delegatorFactory.withdraw(delegator, (amount));
-   }
-
-   function testFail_unDelegateWaitMultiple() public {
-      address delegatee = address(0x1);
-      uint256 amount = 1 ether;
-      // create delegator
-      delegatorFactory.createDelegator(delegatee);
-      address delegator = delegatorFactory.delegateeToDelegator(delegatee);
-
-      // Delegate
-      ctx.approve(address(delegatorFactory), amount * 2);
-      delegatorFactory.stake(delegator, amount);
-
-      // Delegate
-      hevm.warp(3 days);
-      delegatorFactory.stake(delegator, amount);
-
-      hevm.warp(waitTime + 1);
-      // Remove Delegate
-      delegatorFactory.withdraw(delegator, (amount * 2));
-   }
-
-   function testFail_unDelegateWaitMultipleCalls() public {
-      address delegatee = address(0x1);
-      uint256 amount = 1 ether;
-      // create delegator
-      delegatorFactory.createDelegator(delegatee);
-      address delegator = delegatorFactory.delegateeToDelegator(delegatee);
-
-      // Delegate
-      ctx.approve(address(delegatorFactory), amount * 2);
-      delegatorFactory.stake(delegator, amount);
-
-      // Delegate
-      hevm.warp(3 days);
-      delegatorFactory.stake(delegator, amount);
-
-      hevm.warp(waitTime + 1);
-      // Remove Delegate
-      delegatorFactory.withdraw(delegator, (amount));
-      delegatorFactory.withdraw(delegator, (amount));
-   }
-
-   function testFail_unDelegateNoWaitMultiple() public {
-      address delegatee = address(0x0);
-      uint256 amount = 1 ether;
-      // create delegator
-      delegatorFactory.createDelegator(delegatee);
-      address delegator = delegatorFactory.delegateeToDelegator(delegatee);
-
-      // Delegate
-      ctx.approve(address(delegatorFactory), amount * 2);
-      delegatorFactory.stake(delegator, amount);
-
-      // Delegate
-      hevm.warp(3 days);
       delegatorFactory.stake(delegator, amount);
 
       // Remove Delegate
