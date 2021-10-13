@@ -9,7 +9,7 @@
 	"scripts": {
 		"build": "npx hardhat compile",
 		"test": "./test.sh",
-		"compile": "jq '.contracts.\"src/DelegatorFactory.sol\".DelegatorFactory.abi' out/dapp.sol.json",
+		"compile": "jq '.contracts.\"src/Delegator.sol\".Delegator.abi' out/dapp.sol.json",
 		"coverage": "./coverage.sh",
 		"typechain": "npx hardhat compile && typechain --outDir typechain --target ethers 'artifacts/*.json'",
 		"deploy": "npx hardhat deploy",
@@ -17,7 +17,8 @@
 		"docgen": "yarn run solidity-docgen --solc-module solc-0.7"
 	},
 	"dependencies": {
-		"@nomiclabs/hardhat-ethers": "^2.0.2",
+		"@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers",
+		"@nomiclabs/hardhat-etherscan": "^2.1.6",
 		"@nomiclabs/hardhat-waffle": "^2.0.1",
 		"@types/chai": "^4.2.21",
 		"@types/mocha": "^9.0.0",
@@ -25,7 +26,7 @@
 		"chai": "^4.3.4",
 		"dotenv": "^10.0.0",
 		"ethereum-waffle": "^3.4.0",
-		"ethers": "^5.4.6",
+		"ethers": "^5.4.7",
 		"hardhat": "^2.6.2",
 		"hardhat-deploy": "^0.9.1",
 		"prettier": "^2.3.2",
